@@ -24,18 +24,85 @@ PASSWORD = "sara-2021"
 SERVER_IP = "192.168.0.50"
 SERVER_MAC = "04:d4:c4:f2:a0:15"
 
+def get_usage_data():
+    try:
+        output = subprocess.check_output(
+            ["/mnt/Main_data/scripts/server_web_fallback/commands/get_usage.sh"]
+        ).decode()
+        return json.loads(output)
+    except Exception as e:
+        print(f"Usage error: {e}")
+        return {}
+
+def get_traffic_data():
+    try:
+        output = subprocess.check_output(
+            ["/mnt/Main_data/scripts/server_web_fallback/commands/get_traffic.sh"]
+        ).decode()
+        return json.loads(output)
+    except Exception as e:
+        print(f"Traffic error: {e}")
+        return {}
+
+def get_login_stats():
+    try:
+        output = subprocess.check_output(
+            ["/mnt/Main_data/scripts/server_web_fallback/commands/get_login_stats.sh"]
+        ).decode()
+        return json.loads(output)
+    except Exception as e:
+        print(f"Login stats error: {e}")
+        return {}
+
+@app.route('/shutdown', methods=['POST'])
+def shutdown():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
+    try:
+        subprocess.check_call(["/mnt/Main_data/scripts/server_web_fallback/commands/shutdown.sh"])
+        return "OK", 200
+    except:
+        return "Failed to shutdown", 500
+
+@app.route('/restart', methods=['POST'])
+def restart():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+
+    try:
+        subprocess.check_call(["/mnt/Main_data/scripts/server_web_fallback/commands/restart.sh"])
+        return "OK", 200
+    except:
+        return "Failed to restart", 500
+
+
 @app.route('/', methods=['GET', 'POST'])
 def login():
     if session.get('logged_in'):
-        return redirect(url_for('dashboard'))  # <-- ako si već ulogovan
+        return redirect(url_for('dashboard'))
 
     if request.method == 'POST':
-        if request.form['username'] == USERNAME and request.form['password'] == PASSWORD:
+        username = request.form['username']
+        password = request.form['password']
+        success = (username == USERNAME and password == PASSWORD)
+
+        # Loguj pokušaj
+        log_type = "success" if success else "fail"
+        log_path = "/mnt/Main_data/scripts/server_web_fallback/logs/login.log"
+        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+
+        with open(log_path, "a") as f:
+            f.write(f"{log_type}|{int(time.time())}\n")
+
+        if success:
             session.permanent = True
             session['logged_in'] = True
             return redirect(url_for('dashboard'))
-        return render_template('login.html', error="Pogrešan login.")
+        return render_template('login.html', error="Wrong login.")
+
     return render_template('login.html')
+
 
 @app.before_request
 def set_cookie_domain_and_auth():
@@ -58,14 +125,30 @@ def dashboard():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
 
-    if platform.system().lower() == "windows":
-        # Ping komanda za Windows
-        online = subprocess.call(['ping', '-n', '1', SERVER_IP], stdout=subprocess.DEVNULL) == 0
-    else:
-        # Ping komanda za Linux
-        online = subprocess.call(['ping', '-c', '1', '-W', '1', SERVER_IP], stdout=subprocess.DEVNULL) == 0
+    try:
+        if platform.system().lower() == "windows":
+            # Windows ping
+            online = subprocess.call(['ping', '-n', '1', SERVER_IP], stdout=subprocess.DEVNULL) == 0
+        else:
+            # Linux ping
+            online = subprocess.call(['ping', '-c', '1', '-W', '1', SERVER_IP], stdout=subprocess.DEVNULL) == 0
+    except Exception:
+        online = False
 
-    return render_template('dashboard.html', online=online)
+    services = get_service_statuses() if online else {}
+    usage = get_usage_data() if online else {}
+    traffic = get_traffic_data() if online else {}
+    logins = get_login_stats()
+
+    return render_template(
+    "dashboard.html",
+    online=online,
+    services=services,
+    usage=usage,
+    traffic=traffic,
+    logins=logins
+)
+
 
 @app.route('/wakeup', methods=['POST'])
 def wakeup():
@@ -146,6 +229,37 @@ def github_deploy():
 
     Thread(target=background_task).start()
     return "Deploy triggered on main", 200
+
+def get_service_statuses():
+    try:
+        output = subprocess.check_output(
+            ["/mnt/Main_data/scripts/server_web_fallback/commands/service_status.sh"]
+        ).decode().strip().splitlines()
+        services = {}
+        for line in output:
+            if ':' in line:
+                name, status = line.split(':', 1)
+                services[name.strip()] = status.strip()
+        return services
+    except Exception:
+        return {}
+
+@app.route("/service/<name>/<action>", methods=["POST"])
+def manage_service(name, action):
+    allowed_actions = ["start", "stop", "restart"]
+    if action not in allowed_actions:
+        return "Invalid action", 400
+
+    try:
+        subprocess.check_call([
+            "/mnt/Main_data/scripts/server_web_fallback/commands/manage_service.sh",
+            name,
+            action
+        ])
+        return "OK", 200
+    except subprocess.CalledProcessError:
+        return "Failed to execute", 500
+
 
 if __name__ == "__main__":
     print("🔗 Pristupi aplikaciji na:", os.getenv("LOCAL_URL", "http://localhost:8899"))
