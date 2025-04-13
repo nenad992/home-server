@@ -15,7 +15,7 @@ app.permanent_session_lifetime = timedelta(days=30)  # sesija traje 30 dana
 GITHUB_SECRET = b'a9S$8@x!kLm#2Z7rPq*3VgBz'
 
 # Login podaci
-USERNAME = "KucniAdmin"
+USERNAME = "KucniAdmin" # test again
 PASSWORD = "sara-2021"
 
 # Glavni server
