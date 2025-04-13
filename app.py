@@ -12,7 +12,7 @@ app.secret_key = 'sda8@k!82nasd8r1sad129u1asdu1@##!' # kljuc sesije
 app.permanent_session_lifetime = timedelta(days=30)  # sesija traje 30 dana
 
 # Github
-GITHUB_SECRET = b'a9S$8@x!kLm#2Z7rPq*3VgBz'
+GITHUB_SECRET = b'a9S$8@x!kLm#2Z7rPq*3VgBz'  # ✅ bytes
 
 # Login podaci
 USERNAME = "KucniAdmin" # test again
