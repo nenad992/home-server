@@ -5,7 +5,6 @@ from datetime import timedelta
 import hmac
 import hashlib
 # testing v2.0.0
-# ttttttttttttt
 app = Flask(__name__)
 # app.config['SESSION_COOKIE_DOMAIN'] = '.kucniserver.duckdns.org'
 app.secret_key = 'sda8@k!82nasd8r1sad129u1asdu1@##!' # kljuc sesije
