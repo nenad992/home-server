@@ -34,7 +34,7 @@
 
 <nav class="navbar navbar-expand-lg navbar-dark bg-success">
   <div class="container-fluid">
-    <a class="navbar-brand" href="#">📡 Kućni Server</a>
+    <a class="navbar-brand" href="#">📡 Home Server</a>
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
       <span class="navbar-toggler-icon"></span>
     </button>
@@ -57,11 +57,11 @@
 <div class="container mt-4">
   <h2>Status servera:</h2>
   {% if online %}
-    <div class="status online">✅ Server je uključen.</div>
+    <div class="status online">✅ Main Server - ONLINE.</div>
   {% else %}
-    <div class="status offline">❌ Server je isključen.</div>
+    <div class="status offline">❌ Main Server - OFFLINE.</div>
     <form method="POST" action="/wakeup">
-      <button type="submit">🔌 Uključi server</button>
+      <button type="submit">🔌 Turn On Main Server</button>
     </form>
   {% endif %}
 </div>
