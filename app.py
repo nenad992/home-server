@@ -4,7 +4,7 @@ from wakeonlan import send_magic_packet
 from datetime import timedelta
 import hmac
 import hashlib
-
+# testing 
 app = Flask(__name__)
 # app.config['SESSION_COOKIE_DOMAIN'] = '.kucniserver.duckdns.org'
 app.secret_key = 'sda8@k!82nasd8r1sad129u1asdu1@##!' # kljuc sesije
@@ -34,7 +34,7 @@ def login():
         return render_template('login.html', error="Pogrešan login.")
     return render_template('login.html')
 
-@app.before_request # added this as a test for a push
+@app.before_request
 def set_cookie_domain():
     if request.host.startswith("192.168."):
         app.config['SESSION_COOKIE_DOMAIN'] = None  # lokalni pristup (IP)
