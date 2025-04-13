@@ -35,11 +35,20 @@ def login():
     return render_template('login.html')
 
 @app.before_request
-def set_cookie_domain():
+def set_cookie_domain_and_auth():
+    # Postavi domen kolačića
     if request.host.startswith("192.168."):
-        app.config['SESSION_COOKIE_DOMAIN'] = None  # lokalni pristup (IP)
+        app.config['SESSION_COOKIE_DOMAIN'] = None
     else:
-        app.config['SESSION_COOKIE_DOMAIN'] = ".kucniserver.duckdns.org"  # javni domen
+        app.config['SESSION_COOKIE_DOMAIN'] = ".kucniserver.duckdns.org"
+
+    # Dozvoli GitHub webhook bez autentifikacije
+    if request.path == '/github_deploy':
+        return
+
+    # Sve ostalo traži login
+    if not session.get('logged_in') and request.endpoint not in ['login', 'static']:
+        return redirect(url_for('login'))
 
 @app.route('/dashboard')
 def dashboard():
