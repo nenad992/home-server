@@ -8,11 +8,11 @@ import hashlib
 # ttttttttttttt
 app = Flask(__name__)
 # app.config['SESSION_COOKIE_DOMAIN'] = '.kucniserver.duckdns.org'
-app.secret_key = b'sda8@k!82nasd8r1sad129u1asdu1@##!' # kljuc sesije
+app.secret_key = 'sda8@k!82nasd8r1sad129u1asdu1@##!' # kljuc sesije
 app.permanent_session_lifetime = timedelta(days=30)  # sesija traje 30 dana
 
 # Github
-GITHUB_SECRET = 'a9S$8@x!kLm#2Z7rPq*3VgBz'
+GITHUB_SECRET = b'a9S$8@x!kLm#2Z7rPq*3VgBz'
 
 # Login podaci
 USERNAME = "KucniAdmin"
