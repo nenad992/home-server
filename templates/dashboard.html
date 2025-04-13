@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef2f5;
+      margin: 0;
+    }
+    .sidebar {
+      height: 100vh;
+      width: 220px;
+      background: #2e8b57;
+      position: fixed;
+      top: 0;
+      left: 0;
+      padding-top: 20px;
+    }
+    .sidebar a {
+      display: block;
+      color: white;
+      padding: 15px 20px;
+      text-decoration: none;
+    }
+    .sidebar a:hover {
+      background: #246b45;
+    }
+    .main {
+      margin-left: 240px;
+      padding: 20px;
+    }
+    .status {
+      font-size: 18px;
+      margin-bottom: 20px;
+    }
+    .online { color: green; }
+    .offline { color: red; }
+    button {
+      padding: 10px 20px;
+      background: #2e8b57;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #246b45;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <a href="/dashboard">📊 Dashboard</a>
+    <a href="/apps">🧩 Apps</a>
+    <a href="/logout">🔓 Odjavi se</a>
+  </div>
+
+  <div class="main">
+    <h2>Status servera:</h2>
+    {% if online %}
+      <div class="status online">✅ Server je uključen.</div>
+    {% else %}
+      <div class="status offline">❌ Server je isključen.</div>
+      <form method="POST" action="/wakeup">
+        <button type="submit">🔌 Uključi server</button>
+      </form>
+    {% endif %}
+  </div>
+</body>
+</html>

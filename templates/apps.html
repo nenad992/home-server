@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Aplikacije</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f3f3;
+      margin: 0;
+    }
+    .sidebar {
+      height: 100vh;
+      width: 220px;
+      background: #2e8b57;
+      position: fixed;
+      top: 0;
+      left: 0;
+      padding-top: 20px;
+    }
+    .sidebar a {
+      display: block;
+      color: white;
+      padding: 15px 20px;
+      text-decoration: none;
+    }
+    .sidebar a:hover {
+      background: #246b45;
+    }
+    .main {
+      margin-left: 240px;
+      padding: 20px;
+    }
+    .status {
+      font-size: 18px;
+      margin-bottom: 20px;
+    }
+    .online { color: green; }
+    .offline { color: red; }
+    .app-button {
+      padding: 12px 25px;
+      margin: 10px;
+      background: #2e8b57;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .app-button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <a href="/dashboard">📊 Dashboard</a>
+    <a href="/apps">🧩 Apps</a>
+    <a href="/logout">🔓 Odjavi se</a>
+  </div>
+
+  <div class="main">
+    <div class="status">
+      {% if online %}
+        <span class="online">✅ Server je ONLINE</span>
+      {% else %}
+        <span class="offline">❌ Server je OFFLINE</span>
+      {% endif %}
+    </div>
+
+    {% for app, path in apps.items() %}
+      <form method="GET" action="{{ path }}" style="display:inline;">
+        <button class="app-button" {% if not online %}disabled{% endif %}>{{ app }}</button>
+      </form>
+    {% endfor %}
+  </div>
+</body>
+</html>
