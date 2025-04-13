@@ -97,16 +97,20 @@ def apps():
 
 @app.route('/github_deploy', methods=['POST'])
 def github_deploy():
-    signature = request.headers.get('X-Hub-Signature-256', '')
-    payload = request.data
-    mac = hmac.new(GITHUB_SECRET, msg=payload, digestmod=hashlib.sha256)
-    expected = 'sha256=' + mac.hexdigest()
+    signature = request.headers.get('X-Hub-Signature-256')
+    if signature is None:
+        abort(400, "Missing signature")
 
-    if not hmac.compare_digest(expected, signature):
-        return abort(403)
+    sha_name, signature = signature.split('=')
+    if sha_name != 'sha256':
+        abort(400, "Invalid signature format")
 
-    subprocess.Popen(["/mnt/Main_data/scripts/server_web_fallback/deploy.sh"])
-    return 'OK', 200
+    mac = hmac.new(GITHUB_SECRET, msg=request.data, digestmod=hashlib.sha256)
+    if not hmac.compare_digest(mac.hexdigest(), signature):
+        abort(403, "Invalid signature")
 
+    # Pokreni deploy skriptu
+    subprocess.call(["/mnt/Main_data/scripts/server_web_fallback/deploy.sh"])
+    return "OK", 200
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8888)
