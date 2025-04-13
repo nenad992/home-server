@@ -4,6 +4,7 @@ from threading import Thread
 from wakeonlan import send_magic_packet
 from datetime import timedelta
 import hmac
+import platform
 import hashlib
 app = Flask(__name__)
 # app.config['SESSION_COOKIE_DOMAIN'] = '.kucniserver.duckdns.org' 
@@ -36,13 +37,13 @@ def login():
 
 @app.before_request
 def set_cookie_domain_and_auth():
-    # Postavi domen kolačića
-    if request.host.startswith("192.168."):
-        app.config['SESSION_COOKIE_DOMAIN'] = None
-    else:
+    # Ako domen NIJE localhost → postavi domen kolačića
+    if not request.host.startswith("localhost") and not request.host.startswith("127.0.0.1"):
         app.config['SESSION_COOKIE_DOMAIN'] = ".kucniserver.duckdns.org"
+    else:
+        app.config['SESSION_COOKIE_DOMAIN'] = None
 
-    # Dozvoli GitHub webhook bez autentifikacije
+    # Dozvoli GitHub webhook bez login-a
     if request.path == '/github_deploy':
         return
 
@@ -54,7 +55,14 @@ def set_cookie_domain_and_auth():
 def dashboard():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
-    online = subprocess.call(['ping', '-c', '1', '-W', '1', SERVER_IP], stdout=subprocess.DEVNULL) == 0
+
+    if platform.system().lower() == "windows":
+        # Ping komanda za Windows
+        online = subprocess.call(['ping', '-n', '1', SERVER_IP], stdout=subprocess.DEVNULL) == 0
+    else:
+        # Ping komanda za Linux
+        online = subprocess.call(['ping', '-c', '1', '-W', '1', SERVER_IP], stdout=subprocess.DEVNULL) == 0
+
     return render_template('dashboard.html', online=online)
 
 @app.route('/wakeup', methods=['POST'])
@@ -81,7 +89,10 @@ def apps():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
 
-    server_online = subprocess.call(['ping', '-c', '1', '-W', '1', SERVER_IP], stdout=subprocess.DEVNULL) == 0
+    if platform.system().lower() == "windows":
+        server_online = subprocess.call(['ping', '-n', '1', SERVER_IP], stdout=subprocess.DEVNULL) == 0
+    else:
+        server_online = subprocess.call(['ping', '-c', '1', '-W', '1', SERVER_IP], stdout=subprocess.DEVNULL) == 0
 
     # Lokalna mreža → koristi IP adresu
     if request.host.startswith("192.168."):
@@ -127,4 +138,5 @@ def github_deploy():
     Thread(target=background_task).start()
     return "OK", 200
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=8888)
+    print("🔗 Pristupi aplikaciji na:", os.getenv("LOCAL_URL", "http://localhost:8899"))
+    app.run(debug=True, host='0.0.0.0', port=8888)
