@@ -6,6 +6,8 @@ from datetime import timedelta
 import hmac
 import platform
 import hashlib
+import json
+
 app = Flask(__name__)
 # app.config['SESSION_COOKIE_DOMAIN'] = '.kucniserver.duckdns.org' 
 app.secret_key = 'sda8@k!82nasd8r1sad129u1asdu1@##!' # kljuc sesije
@@ -125,18 +127,26 @@ def github_deploy():
     if sha_name != 'sha256':
         abort(400, "Invalid signature format")
 
-    payload = request.get_data()
-    mac = hmac.new(GITHUB_SECRET, msg=payload, digestmod=hashlib.sha256)
+    payload_raw = request.get_data()
+    mac = hmac.new(GITHUB_SECRET, msg=payload_raw, digestmod=hashlib.sha256)
 
     if not hmac.compare_digest(mac.hexdigest(), signature):
         abort(403, "Invalid signature")
+
+    # Parse payload JSON
+    payload = json.loads(payload_raw)
+
+    # Provera da li je push bio na main granu
+    if payload.get("ref") != "refs/heads/main":
+        return "Not main branch – deploy skipped.", 200
 
     # Pokreni deploy skriptu u pozadini
     def background_task():
         subprocess.call(["/mnt/Main_data/scripts/server_web_fallback/deploy.sh"])
 
     Thread(target=background_task).start()
-    return "OK", 200
+    return "Deploy triggered on main", 200
+
 if __name__ == "__main__":
     print("🔗 Pristupi aplikaciji na:", os.getenv("LOCAL_URL", "http://localhost:8899"))
     app.run(debug=True, host='0.0.0.0', port=8888)
