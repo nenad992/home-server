@@ -1,4 +1,4 @@
-#!/bin/bash
+##!/bin/bash
 
 # INTERFACES
 ORANGE_IFACE="eth0"       # ← Orange Pi koristi eth0
