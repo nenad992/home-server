@@ -1,7 +1,7 @@
 ##!/bin/bash
 
 # INTERFACES
-ORANGE_IFACE="eth0"       # ← Orange Pi koristi eth0 
+ORANGE_IFACE="wlan0"       # ← Orange Pi koristi eth0 
 MAIN_IFACE="enp2s0"       # ← TrueNAS koristi enp2s0
 MAIN_IP="192.168.0.50"
 
