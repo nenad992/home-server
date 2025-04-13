@@ -8,3 +8,10 @@ venv/
 *.sqlite3
 instance/
 .webassets-cache
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+*.zip
+*.tar
+*.tar.gz
