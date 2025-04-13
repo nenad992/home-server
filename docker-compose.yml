@@ -1,0 +1,12 @@
+services:
+  home-server:
+    build: .
+    container_name: home-server-dev
+    ports:
+      - "8899:8888"
+    volumes:
+      - .:/app
+    environment:
+      - FLASK_PORT=8888
+      - LOCAL_URL=http://localhost:8899
+    command: python app.py

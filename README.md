@@ -17,8 +17,6 @@
 ```bash
 git clone https://github.com/nenad992/home-server.git
 cd home-server
-python -m venv venv
-venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
@@ -29,11 +27,10 @@ pip install -r requirements.txt
 Pokreni lokalnu aplikaciju unutar Docker-a:
 
 ```bash
-venv\Scripts\activate
 tilt up
 ```
 
-📍 Web aplikacija: [http://localhost:8888](http://localhost:8888)  
+📍 Web aplikacija: [http://localhost:8889](http://localhost:8889)  
 📍 Tilt UI: [http://localhost:10350](http://localhost:10350)
 
 ---
@@ -53,7 +50,3 @@ tilt up
 
 ---
 
-## ✍️ Autor
-
-Nenad Stojković  
-Repo: https://github.com/nenad992/home-server
