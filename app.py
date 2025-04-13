@@ -1,12 +1,17 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, abort
 import os, subprocess, time
 from wakeonlan import send_magic_packet
 from datetime import timedelta
+import hmac
+import hashlib
 
 app = Flask(__name__)
 # app.config['SESSION_COOKIE_DOMAIN'] = '.kucniserver.duckdns.org'
 app.secret_key = 'sda8@k!82nasd8r1sad129u1asdu1@##!' # kljuc sesije
 app.permanent_session_lifetime = timedelta(days=30)  # sesija traje 30 dana
+
+# Github
+GITHUB_SECRET = b'a9S$8@x!kLm#2Z7rPq*3VgBz'
 
 # Login podaci
 USERNAME = "KucniAdmin"
@@ -89,6 +94,19 @@ def apps():
     }
 
     return render_template("apps.html", online=server_online, apps=apps)
+
+@app.route('/github_deploy', methods=['POST'])
+def github_deploy():
+    signature = request.headers.get('X-Hub-Signature-256', '')
+    payload = request.data
+    mac = hmac.new(GITHUB_SECRET, msg=payload, digestmod=hashlib.sha256)
+    expected = 'sha256=' + mac.hexdigest()
+
+    if not hmac.compare_digest(expected, signature):
+        return abort(403)
+
+    subprocess.Popen(["/mnt/Main_data/scripts/server_web_fallback/deploy.sh"])
+    return 'OK', 200
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8888)
