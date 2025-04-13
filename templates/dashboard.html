@@ -3,68 +3,244 @@
 <head>
   <title>Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <style>
     body {
+      background-color: #222230;
       font-family: Arial, sans-serif;
-      background: #eef2f5;
+      color: #111;
     }
-    .status {
-      font-size: 18px;
-      margin-bottom: 20px;
+    .navbar {
+      background-color: #293146;
     }
-    .online { color: green; }
-    .offline { color: red; }
-    button {
-      padding: 10px 20px;
-      background: #2e8b57;
-      color: white;
+    .card {
+      background-color: #f4f4f4be;
       border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 16px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
     }
-    button:hover {
-      background: #246b45;
+    .card-title {
+      font-weight: bold;
+      font-size: 1.2rem;
     }
+    .grid-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    .card.services {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .card.status {
+      grid-column: 1 / -1;
+    }
+    .btn-sm {
+      font-size: 0.90rem;
+    }
+    .server-offline .card:not(.status) {
+    opacity: 0.4;
+    pointer-events: none;
+    }
+    .server-offline .card.status {
+    opacity: 1 !important;  
+    } 
+
   </style>
 </head>
-<body>
+<body class="{{ 'server-offline' if not online else '' }}">
 
-<nav class="navbar navbar-expand-lg navbar-dark bg-success">
-  <div class="container-fluid">
-    <a class="navbar-brand" href="#">📡 Home Server</a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav">
-        <li class="nav-item">
-          <a class="nav-link active" href="/dashboard">📊 Dashboard</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/apps">🧩 Apps</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/logout">🔓 Logout</a>
-        </li>
-      </ul>
-    </div>
+<nav class="navbar navbar-expand-lg navbar-dark px-3">
+  <a class="navbar-brand" href="/dashboard">📡 Home Server</a>
+  <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse" id="navbarNav">
+    <ul class="navbar-nav ms-auto">
+      <li class="nav-item"><a class="nav-link" href="/apps">🧩 Apps</a></li>
+      <li class="nav-item"><a class="nav-link" href="/logout">🔒 Logout</a></li>
+    </ul>
   </div>
 </nav>
 
-<div class="container mt-4">
-  <h2>Status servera:</h2>
-  {% if online %}
-    <div class="status online">✅ Main Server - ONLINE.</div>
-  {% else %}
-    <div class="status offline">❌ Main Server - OFFLINE.</div>
-    <form method="POST" action="/wakeup">
-      <button type="submit">🔌 Turn On Main Server</button>
-    </form>
-  {% endif %}
+<div class="container py-4">
+  <div class="grid-container">
+
+    <!-- Server Status -->
+    <div class="card p-3 status text-center">
+      <h2 class="card-title">🖥️ Server Status</h2>
+      <h5>Status: <span class="text-success fw-bold">ONLINE</span></h5>
+      <div class="d-flex justify-content-center gap-4 mt-3">
+        <button class="btn btn-danger btn-sm" onclick="confirmShutdown()">Shutdown</button>
+        <button class="btn btn-warning btn-sm" onclick="confirmRestart()">Restart</button>
+      </div>
+    </div>
+    
+    <script>
+      function confirmShutdown() {
+        Swal.fire({
+          title: 'Are you sure?',
+          text: "This will shut down the main server!",
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#d33',
+          cancelButtonColor: '#3085d6',
+          confirmButtonText: 'Yes, shut it down',
+          reverseButtons: true
+        }).then((result) => {
+          if (result.isConfirmed) {
+            fetch('/shutdown', { method: 'POST' }); // backend će se dodati kasnije
+          }
+        });
+      }
+    
+      function confirmRestart() {
+        Swal.fire({
+          title: 'Are you sure?',
+          text: "This will restart the main server!",
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonColor: '#f0ad4e',
+          cancelButtonColor: '#3085d6',
+          confirmButtonText: 'Yes, restart it',
+          reverseButtons: true
+        }).then((result) => {
+          if (result.isConfirmed) {
+            fetch('/restart', { method: 'POST' }); // backend će se dodati kasnije
+          }
+        });
+      }
+    </script>
+    
+
+    <!-- Service Status -->
+    <div class="card p-3 services">
+      <h5 class="card-title">⚙️ Service Status</h5>
+      {% if services %}
+        {% for name, status in services.items() %}
+          <div class="d-flex align-items-center gap-2 mb-2">
+            <span style="width: 100px;">{{ name }}</span>
+            {% if '✅' in status %}
+              <span class="badge bg-success">Online</span>
+              <button class="btn btn-danger btn-sm" onclick="serviceAction('{{ name }}', 'stop')">Stop</button>
+            {% else %}
+              <span class="badge bg-danger">Offline</span>
+              <button class="btn btn-success btn-sm" onclick="serviceAction('{{ name }}', 'start')">Start</button>
+            {% endif %}
+            <button class="btn btn-warning btn-sm" onclick="serviceAction('{{ name }}', 'restart')">Restart</button>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p>No service data available.</p>
+      {% endif %}
+    </div>
+
+    <!-- Usage -->
+    <div class="card p-3">
+      <h5 class="card-title">📊 Usage</h5>
+      {% if usage %}
+        <p>CPU: Main {{ usage.main.cpu }}% | Orange {{ usage.orange.cpu }}%</p>
+        <p>RAM: Main {{ usage.main.ram_used }} / {{ usage.main.ram_total }} MB | Orange {{ usage.orange.ram_used }} / {{ usage.orange.ram_total }} MB</p>
+        <p>Temp CPU: Main {{ usage.main.temp }}°C | Orange {{ usage.orange.temp }}°C</p>
+      {% else %}
+        <p>No usage data available.</p>
+      {% endif %}
+    </div>
+    
+
+    <!-- Network / Traffic -->
+    <div class="card p-3">
+      <h5 class="card-title">🌐 Network & Traffic</h5>
+      {% if traffic %}
+        <p>Orange Pi: ↑ {{ (traffic.orange.tx / 1048576) | round(2) }} MB ↓ {{ (traffic.orange.rx / 1048576) | round(2) }} MB</p>
+        <p>Main Server: ↑ {{ (traffic.main.tx / 1048576) | round(2) }} MB ↓ {{ (traffic.main.rx / 1048576) | round(2) }} MB</p>
+        <p>Total: ↑ {{ ((traffic.main.tx + traffic.orange.tx) / 1048576) | round(2) }} MB ↓ {{ ((traffic.main.rx + traffic.orange.rx) / 1048576) | round(2) }} MB</p>
+      {% else %}
+        <p>No traffic data available.</p>
+      {% endif %}
+    </div>
+    
+
+    <!-- Notifications -->
+    <div class="card p-3">
+      <h5 class="card-title">🔔 Login Activity</h5>
+      {% if logins %}
+        <p>Today: ✅ {{ logins.today.success }} | ❌ {{ logins.today.fail }}</p>
+        <p>Yesterday: ✅ {{ logins.yesterday.success }} | ❌ {{ logins.yesterday.fail }}</p>
+        <p>Last 7 Days: ✅ {{ logins.week.success }} | ❌ {{ logins.week.fail }}</p>
+      {% else %}
+        <p>No login data available.</p>
+      {% endif %}
+    </div>
+    
+
+    <!-- Docker -->
+    <div class="card p-3">
+      <h5 class="card-title">🐳 Docker</h5>
+      <p>Total: 12</p>
+      <p>Active: 10</p>
+      <p>Inactive: 2</p>
+    </div>
+
+    <!-- Storage -->
+    <div class="card p-3">
+      <h5 class="card-title">💾 Storage</h5>
+      <p>Orange: 2.1 / 48 GB</p>
+      <p>Main: 6.7 / 12.0 TB</p>
+    </div>
+
+  </div>
 </div>
+<script>
+  function serviceAction(service, action) {
+    fetch(`/service/${service}/${action}`, {
+      method: "POST"
+    }).then(resp => {
+      if (resp.ok) {
+        location.reload();
+      } else {
+        alert("Failed to " + action + " " + service);
+      }
+    });
+  }
+
+  function confirmShutdown() {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "This will shut down the main server!",
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#d33',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, shut it down',
+      reverseButtons: true
+    }).then((result) => {
+      if (result.isConfirmed) {
+        fetch('/shutdown', { method: 'POST' });
+      }
+    });
+  }
+
+  function confirmRestart() {
+    Swal.fire({
+      title: 'Are you sure?',
+      text: "This will restart the main server!",
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonColor: '#f0ad4e',
+      cancelButtonColor: '#3085d6',
+      confirmButtonText: 'Yes, restart it',
+      reverseButtons: true
+    }).then((result) => {
+      if (result.isConfirmed) {
+        fetch('/restart', { method: 'POST' });
+      }
+    });
+  }
+</script>
 
 </body>
 </html>
