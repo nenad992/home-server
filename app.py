@@ -34,7 +34,7 @@ def login():
         return render_template('login.html', error="Pogrešan login.")
     return render_template('login.html')
 
-@app.before_request
+@app.before_request # added this as a test for a push
 def set_cookie_domain():
     if request.host.startswith("192.168."):
         app.config['SESSION_COOKIE_DOMAIN'] = None  # lokalni pristup (IP)
