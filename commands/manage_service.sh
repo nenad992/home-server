@@ -32,20 +32,7 @@ if [ -z "$CONTAINER" ]; then
   exit 1
 fi
 
-case "$ACTION" in
-  start)
-    docker start "$CONTAINER"
-    ;;
-  stop)
-    docker stop "$CONTAINER"
-    ;;
-  restart)
-    docker restart "$CONTAINER"
-    ;;
-  *)
-    echo "Invalid action"
-    exit 1
-    ;;
-esac
+# Izvrši komandu na glavnom serveru
+ssh root@192.168.0.50 "docker $ACTION $CONTAINER"
 
 echo "$SERVICE_NAME $ACTION executed"
