@@ -4,7 +4,7 @@ from wakeonlan import send_magic_packet
 from datetime import timedelta
 import hmac
 import hashlib
-# testing 
+# testing v2
 app = Flask(__name__)
 # app.config['SESSION_COOKIE_DOMAIN'] = '.kucniserver.duckdns.org'
 app.secret_key = 'sda8@k!82nasd8r1sad129u1asdu1@##!' # kljuc sesije
