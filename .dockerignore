@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual env
+env/
+venv/
+
+# SQLite baze
+*.db
+*.sqlite3
+
+# Flask instance folder
+instance/
+
+# Web assets
+.webassets-cache
+
+# VS Code i drugi editori
+.vscode/
+*.swp
+
+# OS fajlovi
+.DS_Store
+Thumbs.db
+
+# Tilt i Docker fajlovi koje ne želiš da se keširaju
+*.zip
+*.tar
+*.tar.gz
