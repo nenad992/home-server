@@ -106,7 +106,9 @@ def github_deploy():
     if sha_name != 'sha256':
         abort(400, "Invalid signature format")
 
-    mac = hmac.new(GITHUB_SECRET, msg=request.data, digestmod=hashlib.sha256)
+    payload = request.get_data()
+    mac = hmac.new(GITHUB_SECRET, msg=payload, digestmod=hashlib.sha256)
+
     if not hmac.compare_digest(mac.hexdigest(), signature):
         abort(403, "Invalid signature")
 
