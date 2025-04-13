@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, abort
 import os, subprocess, time
+from threading import Thread
 from wakeonlan import send_magic_packet
 from datetime import timedelta
 import hmac
@@ -119,8 +120,11 @@ def github_deploy():
     if not hmac.compare_digest(mac.hexdigest(), signature):
         abort(403, "Invalid signature")
 
-    # Pokreni deploy skriptu
-    subprocess.call(["/mnt/Main_data/scripts/server_web_fallback/deploy.sh"])
+    # Pokreni deploy skriptu u pozadini
+    def background_task():
+        subprocess.call(["/mnt/Main_data/scripts/server_web_fallback/deploy.sh"])
+
+    Thread(target=background_task).start()
     return "OK", 200
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8888)
