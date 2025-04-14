@@ -150,19 +150,23 @@
       {% endif %}
     </div>
     
-
     <!-- Network / Traffic -->
     <div class="card p-3">
       <h5 class="card-title">🌐 Network & Traffic</h5>
       {% if traffic %}
-        <p>Orange Pi: ↑ {{ (traffic.orange.tx / 1048576) | round(2) }} MB ↓ {{ (traffic.orange.rx / 1048576) | round(2) }} MB</p>
-        <p>Main Server: ↑ {{ (traffic.main.tx / 1048576) | round(2) }} MB ↓ {{ (traffic.main.rx / 1048576) | round(2) }} MB</p>
-        <p>Total: ↑ {{ ((traffic.main.tx + traffic.orange.tx) / 1048576) | round(2) }} MB ↓ {{ ((traffic.main.rx + traffic.orange.rx) / 1048576) | round(2) }} MB</p>
+        {% set op_tx = traffic.orange.tx or 0 %}
+        {% set op_rx = traffic.orange.rx or 0 %}
+        {% set main_tx = traffic.main.tx or 0 %}
+        {% set main_rx = traffic.main.rx or 0 %}
+
+        <p>Orange Pi: ↑ {{ (op_tx / 1048576) | round(2) }} MB ↓ {{ (op_rx / 1048576) | round(2) }} MB</p>
+        <p>Main Server: ↑ {{ (main_tx / 1048576) | round(2) }} MB ↓ {{ (main_rx / 1048576) | round(2) }} MB</p>
+        <p>Total: ↑ {{ ((op_tx + main_tx) / 1048576) | round(2) }} MB ↓ {{ ((op_rx + main_rx) / 1048576) | round(2) }} MB</p>
       {% else %}
         <p>No traffic data available.</p>
       {% endif %}
     </div>
-    
+
 
     <!-- Notifications -->
     <div class="card p-3">
