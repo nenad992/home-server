@@ -23,7 +23,7 @@ pip install -r requirements.txt
 
 ---
 
-## 🚀 Lokalni razvoj sa Tilt
+## 🚀 Lokalni razvoj sa Tilt Up
 
 Pokreni lokalnu aplikaciju unutar Docker-a:
 
