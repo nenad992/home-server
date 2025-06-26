@@ -523,8 +523,21 @@ def get_usage_data():
         output = subprocess.check_output(
             ["/mnt/Main_data/scripts/server_web_fallback/commands/get_usage.sh"],
             timeout=10
-        ).decode()
-        return json.loads(output)
+        ).decode().strip()
+        print(f"Usage script output: {output[:200]}...")  # Debug log
+        if not output:
+            print("Usage script returned empty output")
+            return {}
+        result = json.loads(output)
+        print(f"Usage data parsed successfully: {result}")  # Debug log
+        return result
+    except subprocess.CalledProcessError as e:
+        print(f"Usage script failed with return code {e.returncode}: {e}")
+        return {}
+    except json.JSONDecodeError as e:
+        print(f"Usage JSON decode error: {e}")
+        print(f"Raw output was: {output}")
+        return {}
     except Exception as e:
         print(f"Usage error: {e}")
         return {}
@@ -534,8 +547,21 @@ def get_traffic_data():
         output = subprocess.check_output(
             ["/mnt/Main_data/scripts/server_web_fallback/commands/get_traffic.sh"],
             timeout=10
-        ).decode()
-        return json.loads(output)
+        ).decode().strip()
+        print(f"Traffic script output: {output[:200]}...")  # Debug log
+        if not output:
+            print("Traffic script returned empty output")
+            return {}
+        result = json.loads(output)
+        print(f"Traffic data parsed successfully: {result}")  # Debug log
+        return result
+    except subprocess.CalledProcessError as e:
+        print(f"Traffic script failed with return code {e.returncode}: {e}")
+        return {}
+    except json.JSONDecodeError as e:
+        print(f"Traffic JSON decode error: {e}")
+        print(f"Raw output was: {output}")
+        return {}
     except Exception as e:
         print(f"Traffic error: {e}")
         return {}
@@ -545,8 +571,21 @@ def get_login_stats():
         output = subprocess.check_output(
             ["/mnt/Main_data/scripts/server_web_fallback/commands/get_login_stats.sh"],
             timeout=5
-        ).decode()
-        return json.loads(output)
+        ).decode().strip()
+        print(f"Login stats script output: {output[:200]}...")  # Debug log
+        if not output:
+            print("Login stats script returned empty output")
+            return {}
+        result = json.loads(output)
+        print(f"Login stats data parsed successfully: {result}")  # Debug log
+        return result
+    except subprocess.CalledProcessError as e:
+        print(f"Login stats script failed with return code {e.returncode}: {e}")
+        return {}
+    except json.JSONDecodeError as e:
+        print(f"Login stats JSON decode error: {e}")
+        print(f"Raw output was: {output}")
+        return {}
     except Exception as e:
         print(f"Login stats error: {e}")
         return {}
@@ -743,7 +782,7 @@ def set_cookie_domain_and_auth():
         return
 
     # Sve ostalo traži login
-    if not session.get('logged_in') and request.endpoint not in ['login', 'static', 'auth_check']:
+    if not session.get('logged_in') and request.endpoint not in ['login', 'static', 'auth_check', 'logout']:
         return redirect(url_for('login'))
 
 @app.route('/dashboard')
@@ -756,13 +795,34 @@ def dashboard():
     # Use cached data for better performance
     if online:
         services = get_cached_data('services', get_service_statuses, 30) or {}
-        usage = get_cached_data('usage', get_usage_data, 30) or {}
-        traffic = get_cached_data('traffic', get_traffic_data, 60) or {}
+        usage_data = get_cached_data('usage', get_usage_data, 30) or {}
+        traffic_data = get_cached_data('traffic', get_traffic_data, 60) or {}
+        
+        # Provide fallback structure for usage data
+        usage = usage_data if usage_data and 'orange' in usage_data and 'main' in usage_data else {
+            'orange': {'cpu': 0, 'ram_used': 0, 'ram_total': 0, 'temp': 0},
+            'main': {'cpu': 0, 'ram_used': 0, 'ram_total': 0, 'temp': 0}
+        }
+        
+        # Provide fallback structure for traffic data  
+        traffic = traffic_data if traffic_data and 'orange' in traffic_data and 'main' in traffic_data else {
+            'orange': {'tx': 0, 'rx': 0},
+            'main': {'tx': 0, 'rx': 0}
+        }
+        
         docker_stats = get_cached_data('docker_stats', get_detailed_docker_stats, 30) or {'containers': [], 'stats': {}, 'total': 0, 'running': 0, 'stopped': 0, 'avg_cpu': 0, 'last_updated': 'N/A'}
         # Remove storage data to improve performance - filesystems section removed
         network = get_cached_data('network', get_network_interfaces, 120) or {'interfaces': [], 'default_gateway': 'N/A', 'last_updated': 'N/A'}
         system_info = get_cached_data('system_info', get_system_info, 60) or {'uptime': 'N/A', 'memory': {}, 'cpu': {}, 'system': 'N/A', 'last_updated': 'N/A'}
-        logins = get_cached_data('logins', get_login_stats, 120) or {}
+        
+        logins_data = get_cached_data('logins', get_login_stats, 120) or {}
+        # Provide fallback structure for login data
+        logins = logins_data if logins_data and 'today' in logins_data else {
+            'today': {'success': 0, 'fail': 0},
+            'yesterday': {'success': 0, 'fail': 0},
+            'week': {'success': 0, 'fail': 0}
+        }
+        
         alerts = get_cached_data('alerts', get_system_alerts, 60) or {'alerts': [], 'count': 0, 'last_updated': 'N/A'}
         bandwidth = get_cached_data('bandwidth', get_network_bandwidth, 120) or {'interfaces': {}, 'total_rx': 0, 'total_tx': 0, 'last_updated': 'N/A'}
         security = get_cached_data('security', get_security_info, 120) or {'failed_logins': 0, 'active_connections': 0, 'firewall_status': 'N/A', 'last_login': 'N/A', 'ssh_attempts': [], 'last_updated': 'N/A'}
@@ -867,7 +927,12 @@ def api_alerts():
 @app.route('/logout')
 def logout():
     session.clear()  # Clear all session data
-    return redirect(url_for('login'))
+    response = redirect(url_for('login'))
+    # Add headers to prevent caching and ensure proper logout
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 @app.route('/favicon.ico')
 def favicon():

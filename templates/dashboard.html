@@ -63,6 +63,9 @@
         font-size: 1.2rem;
         color: #2e8b57;
         letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
       }
       .grid-container {
         display: grid;
@@ -172,15 +175,44 @@
         padding: 0.5rem;
         border-radius: 8px;
         background: rgba(255, 255, 255, 0.1);
+        flex-wrap: wrap;
       }
 
       .service-name {
         min-width: 120px;
         font-weight: 500;
+        flex: 1;
       }
 
       .status-indicator {
         min-width: 80px;
+        flex: 0 0 auto;
+      }
+
+      .service-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex: 0 0 auto;
+      }
+
+      /* Improved desktop layout for services */
+      @media (min-width: 769px) {
+        .service-item {
+          flex-wrap: nowrap;
+          justify-content: space-between;
+        }
+
+        .service-name {
+          flex: 0 0 200px;
+        }
+
+        .status-indicator {
+          flex: 0 0 100px;
+        }
+
+        .service-buttons {
+          flex: 0 0 auto;
+        }
       }
 
       .loading {
@@ -237,6 +269,10 @@
         to {
           transform: rotate(360deg);
         }
+      }
+
+      .spin {
+        animation: spin 1s linear infinite;
       }
 
       .main-content {
@@ -302,7 +338,7 @@
             >
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/logout" onclick="return confirmLogout()"
+            <a class="nav-link" href="#" onclick="confirmLogout()"
               ><i class="bi bi-box-arrow-right icon"></i>Logout</a
             >
           </li>
@@ -344,6 +380,13 @@
         <div class="card p-3 services">
           <h5 class="card-title">
             <i class="bi bi-gear icon"></i>Service Status
+            <button
+              class="btn btn-outline-primary btn-sm ms-auto"
+              onclick="refreshServiceStatus()"
+              title="Refresh Service Status"
+            >
+              <i class="bi bi-arrow-clockwise"></i>
+            </button>
           </h5>
           {% if services and online %} {% for name, status in services.items()
           %}
@@ -400,6 +443,13 @@
           <h5 class="card-title">
             <i class="bi bi-bar-chart icon"></i>Usage
             <small class="text-muted" id="usage-updated"></small>
+            <button
+              class="btn btn-outline-primary btn-sm ms-auto"
+              onclick="refreshUsage()"
+              title="Refresh Usage"
+            >
+              <i class="bi bi-arrow-clockwise"></i>
+            </button>
             <i
               class="bi bi-arrow-repeat text-primary d-none"
               id="usage-loading"
@@ -479,6 +529,13 @@
         <div class="card p-3">
           <h5 class="card-title">
             <i class="bi bi-diagram-3 icon"></i>Network & Traffic
+            <button
+              class="btn btn-outline-primary btn-sm ms-auto"
+              onclick="refreshTraffic()"
+              title="Refresh Traffic"
+            >
+              <i class="bi bi-arrow-clockwise"></i>
+            </button>
           </h5>
           {% if traffic and online %} {% set op_tx = traffic.orange.tx or 0 %}
           {% set op_rx = traffic.orange.rx or 0 %} {% set main_tx =
@@ -508,6 +565,13 @@
         <div class="card p-3">
           <h5 class="card-title">
             <i class="bi bi-bell icon"></i>Login Activity
+            <button
+              class="btn btn-outline-primary btn-sm ms-auto"
+              onclick="refreshLoginActivity()"
+              title="Refresh Login Activity"
+            >
+              <i class="bi bi-arrow-clockwise"></i>
+            </button>
           </h5>
           {% if logins %}
           <div class="row">
@@ -726,6 +790,13 @@
             <small class="text-muted" id="network-updated">
               {% if network.last_updated %}{{ network.last_updated }}{% endif %}
             </small>
+            <button
+              class="btn btn-outline-primary btn-sm ms-auto"
+              onclick="refreshNetwork()"
+              title="Refresh Network"
+            >
+              <i class="bi bi-arrow-clockwise"></i>
+            </button>
           </h5>
           {% if network and online %}
 
@@ -740,7 +811,11 @@
 
           <!-- Network Interfaces - Grouped -->
           {% if network.interfaces %}
-          <div class="row g-2" id="interface-list">
+          <div
+            class="row g-2"
+            id="interface-list"
+            style="max-height: 300px; overflow-y: auto"
+          >
             {% set active_interfaces = [] %} {% set inactive_interfaces = [] %}
             {% for interface in network.interfaces %} {% if interface.state ==
             'UP' %} {% set _ = active_interfaces.append(interface) %} {% else %}
@@ -955,7 +1030,21 @@
               {% if bandwidth.last_updated %}{{ bandwidth.last_updated }}{%
               endif %}
             </small>
+            <button
+              class="btn btn-outline-primary btn-sm ms-auto"
+              onclick="refreshBandwidth()"
+              title="Refresh Bandwidth"
+            >
+              <i class="bi bi-arrow-clockwise"></i>
+            </button>
           </h5>
+          <div class="alert alert-info py-2 mb-3">
+            <i class="bi bi-info-circle me-2"></i>
+            <small
+              ><strong>Note:</strong> Data shows network usage since system boot
+              (uptime)</small
+            >
+          </div>
           {% if bandwidth and online %}
 
           <!-- Total Bandwidth Overview -->
@@ -968,7 +1057,7 @@
                     style="font-size: 1.5rem"
                   ></i>
                   <div class="h4 text-success mb-1" id="total-rx">
-                    {{ bandwidth.total_rx }} MB
+                    {{ (bandwidth.total_rx | float) | round(2) }} MB
                   </div>
                   <small class="text-muted">Total Downloaded</small>
                 </div>
@@ -982,7 +1071,7 @@
                     style="font-size: 1.5rem"
                   ></i>
                   <div class="h4 text-primary mb-1" id="total-tx">
-                    {{ bandwidth.total_tx }} MB
+                    {{ (bandwidth.total_tx | float) | round(2) }} MB
                   </div>
                   <small class="text-muted">Total Uploaded</small>
                 </div>
@@ -1022,12 +1111,16 @@
                   <div class="row text-center">
                     <div class="col-6">
                       <div class="border-end">
-                        <div class="text-success">{{ iface.rx_mb }} MB</div>
+                        <div class="text-success">
+                          {{ (iface.rx_mb | float) | round(2) }} MB
+                        </div>
                         <small class="text-muted">↓ Downloaded</small>
                       </div>
                     </div>
                     <div class="col-6">
-                      <div class="text-primary">{{ iface.tx_mb }} MB</div>
+                      <div class="text-primary">
+                        {{ (iface.tx_mb | float) | round(2) }} MB
+                      </div>
                       <small class="text-muted">↑ Uploaded</small>
                     </div>
                   </div>
@@ -1097,7 +1190,15 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
       function confirmLogout() {
-        return confirm("Are you sure you want to logout?");
+        if (confirm("Are you sure you want to logout?")) {
+          // Clear any local storage or session data
+          sessionStorage.clear();
+          localStorage.removeItem("dashboardCache");
+          // Navigate to logout
+          window.location.href = "/logout";
+          return false; // Prevent default link behavior
+        }
+        return false; // Cancel logout
       }
 
       function confirmShutdown() {
@@ -1470,9 +1571,56 @@
           const totalRx = document.getElementById("total-rx");
           const totalTx = document.getElementById("total-tx");
 
-          if (totalRx) totalRx.textContent = data.bandwidth.total_rx + " MB";
-          if (totalTx) totalTx.textContent = data.bandwidth.total_tx + " MB";
+          if (totalRx)
+            totalRx.textContent =
+              parseFloat(data.bandwidth.total_rx).toFixed(2) + " MB";
+          if (totalTx)
+            totalTx.textContent =
+              parseFloat(data.bandwidth.total_tx).toFixed(2) + " MB";
         }
+
+        // Update traffic data
+        if (data.traffic && data.traffic.orange && data.traffic.main) {
+          // Find and update traffic data in the Network & Traffic card
+          const trafficCard = document.querySelector(
+            ".card:has(.bi-diagram-3)"
+          );
+          if (trafficCard) {
+            const op_tx = data.traffic.orange.tx || 0;
+            const op_rx = data.traffic.orange.rx || 0;
+            const main_tx = data.traffic.main.tx || 0;
+            const main_rx = data.traffic.main.rx || 0;
+
+            const trafficContent = `
+              <p><strong>Orange Pi:</strong> ↑ ${(op_tx / 1048576).toFixed(
+                2
+              )} MB ↓ ${(op_rx / 1048576).toFixed(2)} MB</p>
+              <p><strong>TrueNAS:</strong> ↑ ${(main_tx / 1048576).toFixed(
+                2
+              )} MB ↓ ${(main_rx / 1048576).toFixed(2)} MB</p>
+              <p><strong>Total:</strong> ↑ ${(
+                (op_tx + main_tx) /
+                1048576
+              ).toFixed(2)} MB ↓ ${((op_rx + main_rx) / 1048576).toFixed(
+              2
+            )} MB</p>
+            `;
+
+            const trafficBody =
+              trafficCard.querySelector(".card-title").nextElementSibling;
+            if (trafficBody && trafficBody.tagName !== "H5") {
+              trafficBody.innerHTML = trafficContent;
+            }
+          }
+        }
+
+        // Debug logging for troubleshooting empty data
+        console.log("Dashboard data update:", {
+          usage: !!data.usage,
+          traffic: !!data.traffic,
+          logins: !!data.logins,
+          services: !!data.services,
+        });
 
         // Show update indicator briefly
         const loadingIndicator = document.getElementById("usage-loading");
@@ -1628,6 +1776,139 @@
               '<div class="text-danger">Error loading logs: ' +
               error.message +
               "</div>";
+          });
+      }
+
+      // Individual refresh functions
+      function refreshServiceStatus() {
+        const btn = event.target.closest("button");
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i>';
+        btn.disabled = true;
+
+        fetch("/api/dashboard-data")
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.services) {
+              location.reload();
+            }
+          })
+          .catch((error) => {
+            console.error("Error refreshing service status:", error);
+          })
+          .finally(() => {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+          });
+      }
+
+      function refreshUsage() {
+        const btn = event.target.closest("button");
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i>';
+        btn.disabled = true;
+
+        fetch("/api/dashboard-data")
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.usage) {
+              updateDashboardCards(data);
+            }
+          })
+          .catch((error) => {
+            console.error("Error refreshing usage:", error);
+          })
+          .finally(() => {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+          });
+      }
+
+      function refreshTraffic() {
+        const btn = event.target.closest("button");
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i>';
+        btn.disabled = true;
+
+        fetch("/api/dashboard-data")
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.traffic) {
+              location.reload();
+            }
+          })
+          .catch((error) => {
+            console.error("Error refreshing traffic:", error);
+          })
+          .finally(() => {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+          });
+      }
+
+      function refreshLoginActivity() {
+        const btn = event.target.closest("button");
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i>';
+        btn.disabled = true;
+
+        fetch("/api/dashboard-data")
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.logins) {
+              location.reload();
+            }
+          })
+          .catch((error) => {
+            console.error("Error refreshing login activity:", error);
+          })
+          .finally(() => {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+          });
+      }
+
+      function refreshNetwork() {
+        const btn = event.target.closest("button");
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i>';
+        btn.disabled = true;
+
+        fetch("/api/dashboard-data")
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.network) {
+              updateDashboardCards(data);
+            }
+          })
+          .catch((error) => {
+            console.error("Error refreshing network:", error);
+          })
+          .finally(() => {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+          });
+      }
+
+      function refreshBandwidth() {
+        const btn = event.target.closest("button");
+        const originalHtml = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i>';
+        btn.disabled = true;
+
+        fetch("/api/dashboard-data")
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.bandwidth) {
+              updateDashboardCards(data);
+            }
+          })
+          .catch((error) => {
+            console.error("Error refreshing bandwidth:", error);
+          })
+          .finally(() => {
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
           });
       }
     </script>
