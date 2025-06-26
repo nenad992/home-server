@@ -24,11 +24,11 @@
         background: rgba(255, 255, 255, 0.95);
         border-radius: 14px;
         box-shadow: 0 4px 18px 0 rgba(46, 139, 87, 0.1);
-        padding: 28px 18px 20px 18px;
+        padding: 24px 18px 20px 18px;
         margin: 12px;
-        min-width: 180px;
-        max-width: 220px;
-        flex: 1 1 180px;
+        min-width: 160px;
+        max-width: 200px;
+        flex: 1 1 160px;
         display: flex;
         flex-direction: column;
         align-items: center;
@@ -48,10 +48,14 @@
       }
       .app-title {
         font-weight: 600;
-        font-size: 1.1rem;
+        font-size: 1rem;
         color: #23243a;
         margin-bottom: 8px;
         text-align: center;
+        min-height: 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       .app-button {
         padding: 10px 0;
@@ -66,11 +70,20 @@
         margin-top: 8px;
         transition: background 0.2s, box-shadow 0.2s;
         box-shadow: 0 2px 8px 0 rgba(46, 139, 87, 0.08);
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
       }
       .app-button:disabled {
         background: #ccc;
         cursor: not-allowed;
         color: #888;
+      }
+      .app-button:hover:not(:disabled) {
+        background: linear-gradient(90deg, #24914b 60%, #38b2ac 100%);
+        box-shadow: 0 4px 16px 0 rgba(46, 139, 87, 0.15);
+        color: white;
+        text-decoration: none;
       }
       .status {
         font-size: 18px;
@@ -92,6 +105,61 @@
         gap: 10px;
         margin-top: 10px;
       }
+
+      /* Mobile responsive adjustments */
+      @media (max-width: 768px) {
+        .apps-grid {
+          gap: 8px;
+          margin-top: 16px;
+        }
+        .app-card {
+          min-width: 140px;
+          max-width: 180px;
+          padding: 20px 14px 16px 14px;
+          margin: 8px;
+        }
+        .app-title {
+          font-size: 0.9rem;
+          min-height: 2rem;
+        }
+        .app-icon {
+          font-size: 2rem;
+        }
+        .container {
+          padding-left: 10px;
+          padding-right: 10px;
+        }
+        .navbar-brand {
+          font-size: 1.1rem;
+        }
+      }
+
+      @media (max-width: 576px) {
+        .apps-grid {
+          gap: 6px;
+        }
+        .app-card {
+          min-width: 120px;
+          max-width: 150px;
+          padding: 16px 12px 14px 12px;
+          margin: 6px;
+        }
+        .app-title {
+          font-size: 0.85rem;
+          min-height: 1.8rem;
+        }
+        .app-icon {
+          font-size: 1.8rem;
+        }
+        .app-button {
+          font-size: 0.9rem;
+          padding: 8px 0;
+        }
+        .status {
+          font-size: 16px;
+        }
+      }
+
       .navbar {
         background: rgba(41, 49, 70, 0.98);
         box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
@@ -112,14 +180,31 @@
       .nav-link {
         color: #e0eafc !important;
         font-size: 1.05rem;
+        transition: color 0.2s;
       }
       .nav-link:hover {
         color: #fff !important;
         text-decoration: underline;
       }
+
+      .server-offline .app-card {
+        opacity: 0.6;
+      }
+
+      .server-offline .app-button {
+        background: #ccc !important;
+        cursor: not-allowed !important;
+        pointer-events: none;
+      }
+
+      .icon {
+        font-size: 1.2em;
+        margin-right: 6px;
+        vertical-align: -0.15em;
+      }
     </style>
   </head>
-  <body>
+  <body class="{{ 'server-offline' if not online else '' }}">
     <nav class="navbar navbar-expand-lg navbar-dark px-3 sticky-top">
       <a class="navbar-brand fw-bold" href="/dashboard"
         ><i class="bi bi-hdd-network icon"></i>Home Server</a
@@ -145,8 +230,8 @@
             >
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/logout"
-              ><i class="bi bi-lock icon"></i>Logout</a
+            <a class="nav-link" href="/logout" onclick="return confirmLogout()"
+              ><i class="bi bi-box-arrow-right icon"></i>Logout</a
             >
           </li>
         </ul>
@@ -157,27 +242,75 @@
       <div class="status">
         {% if online %}
         <span class="online"
-          ><i class="bi bi-check-circle"></i> Main Server - ONLINE</span
+          ><i class="bi bi-check-circle"></i> TrueNAS Server - ONLINE</span
         >
         {% else %}
         <span class="offline"
-          ><i class="bi bi-x-circle"></i> Main Server - OFFLINE</span
+          ><i class="bi bi-x-circle"></i> TrueNAS Server - OFFLINE</span
         >
         {% endif %}
       </div>
       <div class="apps-grid">
         {% for app, path in apps.items() %}
-        <form method="GET" action="{{ path }}" style="display: inline">
-          <div class="app-card">
-            <div class="app-icon"><i class="bi bi-grid"></i></div>
-            <div class="app-title">{{ app }}</div>
-            <button class="app-button" {% if not online %}disabled{% endif %}>
-              Open
-            </button>
-          </div>
-        </form>
+        <div class="app-card">
+          {% if app == "Radarr" %}
+          <div class="app-icon"><i class="bi bi-film"></i></div>
+          {% elif app == "Sonarr" %}
+          <div class="app-icon"><i class="bi bi-tv"></i></div>
+          {% elif app == "Overseerr" %}
+          <div class="app-icon"><i class="bi bi-search"></i></div>
+          {% elif app == "Bazarr" %}
+          <div class="app-icon"><i class="bi bi-translate"></i></div>
+          {% elif app == "Prowlarr" %}
+          <div class="app-icon"><i class="bi bi-binoculars"></i></div>
+          {% elif app == "qBittorrent" %}
+          <div class="app-icon"><i class="bi bi-download"></i></div>
+          {% elif app == "Portainer" %}
+          <div class="app-icon"><i class="bi bi-box-seam"></i></div>
+          {% elif app == "Nextcloud" %}
+          <div class="app-icon"><i class="bi bi-cloud"></i></div>
+          {% elif app == "OnlyOffice" %}
+          <div class="app-icon"><i class="bi bi-file-earmark-text"></i></div>
+          {% elif app == "File Browser" %}
+          <div class="app-icon"><i class="bi bi-folder"></i></div>
+          {% elif app == "SQLite Web" %}
+          <div class="app-icon"><i class="bi bi-database"></i></div>
+          {% elif app == "Spisak Bot" %}
+          <div class="app-icon"><i class="bi bi-robot"></i></div>
+          {% else %}
+          <div class="app-icon"><i class="bi bi-app"></i></div>
+          {% endif %}
+          <div class="app-title">{{ app }}</div>
+          {% if online %}
+          <a href="{{ path }}" target="_blank" class="app-button">
+            <i class="bi bi-box-arrow-up-right"></i> Open
+          </a>
+          {% else %}
+          <button class="app-button" disabled>
+            <i class="bi bi-x-circle"></i> Offline
+          </button>
+          {% endif %}
+        </div>
         {% endfor %}
       </div>
+
+      {% if not online %}
+      <div class="text-center mt-4">
+        <p class="text-muted">Server is offline. Apps are not accessible.</p>
+        <button class="btn btn-success" onclick="location.href='/dashboard'">
+          <i class="bi bi-arrow-left"></i> Back to Dashboard
+        </button>
+      </div>
+      {% endif %}
     </div>
+
+    <script>
+      function confirmLogout() {
+        return confirm("Are you sure you want to logout?");
+      }
+
+      // Auto-refresh every 2 minutes to check server status
+      setTimeout(() => location.reload(), 120000);
+    </script>
   </body>
 </html>

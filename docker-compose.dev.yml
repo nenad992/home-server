@@ -1,0 +1,11 @@
+services:
+  home-server-dev:
+    image: home-server
+    container_name: home-server-tilt-dev
+    ports:
+      - "32777:8888"
+    environment:
+      - FLASK_PORT=8888
+      - LOCAL_URL=http://localhost:32777
+      - FLASK_ENV=development
+    command: python app.py

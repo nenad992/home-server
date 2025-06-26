@@ -5,6 +5,7 @@
 ## ⚙️ Potrebni alati (instaliraj jednom)
 
 ### 📌 Moraš imati sledeće instalirano:
+
 - [Python 3.11+](https://www.python.org/downloads/)
 - [Docker Desktop](https://www.docker.com/products/docker-desktop)
 - [Tilt](https://docs.tilt.dev/install.html)
@@ -30,8 +31,17 @@ Pokreni lokalnu aplikaciju unutar Docker-a:
 tilt up
 ```
 
-📍 Web aplikacija: [http://localhost:8889](http://localhost:8889)  
+📍 Web aplikacija: [http://localhost:32777](http://localhost:32777)
 📍 Tilt UI: [http://localhost:10350](http://localhost:10350)
+
+> ⚠️ **Napomena:** Port 32777 je izabran da ne bi dolazilo do konflikta sa drugim projektima. Ova promena važi samo za lokalni razvoj preko Tilt-a i ne utiče na deployment/server.
+
+### 🔧 Šta je poboljšano:
+
+- **Bulletproof Tilt setup** - koristi `docker-compose.dev.yml` za stabilno pokretanje
+- **Live reload** - automatski restart aplikacije kada promeniš kod
+- **Conflict-free port** - port 32889 neće biti u konfliktu sa drugim projektima
+- **Čisti logovi** - nema više 404 grešaka za favicon
 
 ---
 
@@ -49,4 +59,3 @@ tilt up
 - Deploy se radi automatski iz `main` grane putem GitHub webhooka
 
 ---
-
