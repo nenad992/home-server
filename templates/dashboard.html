@@ -24,6 +24,20 @@
         box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
         border-bottom: 1px solid #2e8b57;
       }
+      .navbar-brand {
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: #fff !important;
+      }
+      .nav-link {
+        color: #e0eafc !important;
+        font-size: 1.05rem;
+        transition: color 0.2s;
+      }
+      .nav-link:hover {
+        color: #fff !important;
+        text-decoration: underline;
+      }
       .card {
         background: rgba(255, 255, 255, 0.13);
         border: none;
@@ -32,6 +46,7 @@
         backdrop-filter: blur(7px);
         color: #23243a;
         animation: fadeInCard 0.7s cubic-bezier(0.39, 0.575, 0.565, 1) both;
+        margin-bottom: 1rem;
       }
       @keyframes fadeInCard {
         0% {
@@ -51,12 +66,59 @@
       }
       .grid-container {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
         gap: 24px;
         margin-top: 24px;
       }
+
+      /* Mobile responsive adjustments */
+      @media (max-width: 768px) {
+        .grid-container {
+          grid-template-columns: 1fr;
+          gap: 16px;
+          margin-top: 16px;
+        }
+        .container {
+          padding-left: 10px;
+          padding-right: 10px;
+        }
+        .card {
+          border-radius: 12px;
+        }
+        .btn-sm {
+          font-size: 0.85rem;
+          padding: 0.4rem 0.8rem;
+        }
+        .navbar-brand {
+          font-size: 1.1rem;
+        }
+      }
+
+      @media (max-width: 576px) {
+        .grid-container {
+          gap: 12px;
+        }
+        .card-title {
+          font-size: 1.1rem;
+        }
+        .service-item {
+          flex-direction: column;
+          align-items: flex-start !important;
+          gap: 0.5rem;
+        }
+        .service-buttons {
+          display: flex;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+        .service-buttons .btn {
+          flex: 1;
+          min-width: auto;
+        }
+      }
+
       .card.services {
-        max-height: 320px;
+        max-height: 400px;
         overflow-y: auto;
       }
       .card.status {
@@ -68,15 +130,15 @@
         font-size: 0.95rem;
         border-radius: 7px;
         transition: box-shadow 0.2s, background 0.2s;
+        margin: 0.1rem;
       }
       .btn-sm:hover,
       .btn-sm:focus {
         box-shadow: 0 2px 8px 0 rgba(46, 139, 87, 0.13);
-        background: #2e8b57 !important;
-        color: #fff !important;
       }
+
       .server-offline .card:not(.status) {
-        opacity: 0.4;
+        opacity: 0.6;
         pointer-events: none;
       }
       .server-offline .card.status {
@@ -101,6 +163,40 @@
         margin-bottom: 10px;
         letter-spacing: 0.5px;
       }
+
+      .service-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .service-name {
+        min-width: 120px;
+        font-weight: 500;
+      }
+
+      .status-indicator {
+        min-width: 80px;
+      }
+
+      .loading {
+        opacity: 0.6;
+        pointer-events: none;
+      }
+
+      .text-online {
+        color: #28a745 !important;
+        font-weight: 600;
+      }
+
+      .text-offline {
+        color: #dc3545 !important;
+        font-weight: 600;
+      }
     </style>
   </head>
   <body class="{{ 'server-offline' if not online else '' }}">
@@ -124,8 +220,8 @@
             >
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="/logout"
-              ><i class="bi bi-lock icon"></i>Logout</a
+            <a class="nav-link" href="/logout" onclick="return confirmLogout()"
+              ><i class="bi bi-box-arrow-right icon"></i>Logout</a
             >
           </li>
         </ul>
@@ -137,10 +233,11 @@
         <!-- Server Status -->
         <div class="card p-3 status text-center">
           <h2 class="card-title">
-            <i class="bi bi-cpu icon"></i>Server Status
+            <i class="bi bi-cpu icon"></i>TrueNAS Server Status
           </h2>
-          <h5>Status: <span class="text-success fw-bold">ONLINE</span></h5>
-          <div class="d-flex justify-content-center gap-4 mt-3">
+          {% if online %}
+          <h5>Status: <span class="text-online">ONLINE</span></h5>
+          <div class="d-flex justify-content-center gap-2 mt-3 flex-wrap">
             <button class="btn btn-danger btn-sm" onclick="confirmShutdown()">
               <i class="bi bi-power icon"></i>Shutdown
             </button>
@@ -148,103 +245,151 @@
               <i class="bi bi-arrow-repeat icon"></i>Restart
             </button>
           </div>
+          {% else %}
+          <h5>Status: <span class="text-offline">OFFLINE</span></h5>
+          <div class="d-flex justify-content-center gap-2 mt-3">
+            <button class="btn btn-success btn-sm" onclick="wakeUpServer()">
+              <i class="bi bi-lightning icon"></i>Wake Up
+            </button>
+            <button class="btn btn-info btn-sm" onclick="location.reload()">
+              <i class="bi bi-arrow-clockwise icon"></i>Refresh
+            </button>
+          </div>
+          {% endif %}
         </div>
-
-        <script>
-          function confirmShutdown() {
-            Swal.fire({
-              title: "Are you sure?",
-              text: "This will shut down the main server!",
-              icon: "warning",
-              showCancelButton: true,
-              confirmButtonColor: "#d33",
-              cancelButtonColor: "#3085d6",
-              confirmButtonText: "Yes, shut it down",
-              reverseButtons: true,
-            }).then((result) => {
-              if (result.isConfirmed) {
-                fetch("/shutdown", { method: "POST" });
-              }
-            });
-          }
-
-          function confirmRestart() {
-            Swal.fire({
-              title: "Are you sure?",
-              text: "This will restart the main server!",
-              icon: "question",
-              showCancelButton: true,
-              confirmButtonColor: "#f0ad4e",
-              cancelButtonColor: "#3085d6",
-              confirmButtonText: "Yes, restart it",
-              reverseButtons: true,
-            }).then((result) => {
-              if (result.isConfirmed) {
-                fetch("/restart", { method: "POST" });
-              }
-            });
-          }
-        </script>
 
         <!-- Service Status -->
         <div class="card p-3 services">
           <h5 class="card-title">
             <i class="bi bi-gear icon"></i>Service Status
           </h5>
-          {% if services %} {% for name, status in services.items() %}
-          <div class="d-flex align-items-center gap-2 mb-2">
-            <span style="width: 100px">{{ name }}</span>
+          {% if services and online %} {% for name, status in services.items()
+          %}
+          <div class="service-item">
+            <span class="service-name">{{ name }}</span>
             {% if '✅' in status %}
-            <span class="badge bg-success"
-              ><i class="bi bi-check-circle"></i> Online</span
-            >
-            <button
-              class="btn btn-danger btn-sm"
-              onclick="serviceAction('{{ name }}', 'stop')"
-            >
-              <i class="bi bi-stop-circle"></i> Stop
-            </button>
+            <span class="badge bg-success status-indicator">
+              <i class="bi bi-check-circle"></i> Online
+            </span>
+            <div class="service-buttons">
+              <button
+                class="btn btn-danger btn-sm"
+                onclick="serviceAction('{{ name }}', 'stop')"
+              >
+                <i class="bi bi-stop-circle"></i> Stop
+              </button>
+              <button
+                class="btn btn-warning btn-sm"
+                onclick="serviceAction('{{ name }}', 'restart')"
+              >
+                <i class="bi bi-arrow-repeat"></i> Restart
+              </button>
+            </div>
             {% else %}
-            <span class="badge bg-danger"
-              ><i class="bi bi-x-circle"></i> Offline</span
-            >
-            <button
-              class="btn btn-success btn-sm"
-              onclick="serviceAction('{{ name }}', 'start')"
-            >
-              <i class="bi bi-play-circle"></i> Start
-            </button>
+            <span class="badge bg-danger status-indicator">
+              <i class="bi bi-x-circle"></i> Offline
+            </span>
+            <div class="service-buttons">
+              <button
+                class="btn btn-success btn-sm"
+                onclick="serviceAction('{{ name }}', 'start')"
+              >
+                <i class="bi bi-play-circle"></i> Start
+              </button>
+              <button
+                class="btn btn-warning btn-sm"
+                onclick="serviceAction('{{ name }}', 'restart')"
+              >
+                <i class="bi bi-arrow-repeat"></i> Restart
+              </button>
+            </div>
             {% endif %}
-            <button
-              class="btn btn-warning btn-sm"
-              onclick="serviceAction('{{ name }}', 'restart')"
-            >
-              <i class="bi bi-arrow-repeat"></i> Restart
-            </button>
           </div>
           {% endfor %} {% else %}
-          <p>No service data available.</p>
+          <p class="text-center">
+            {% if not online %}Server offline - no service data available{% else
+            %}No service data available{% endif %}
+          </p>
           {% endif %}
         </div>
 
-        <!-- Usage -->
-        <div class="card p-3">
-          <h5 class="card-title"><i class="bi bi-bar-chart icon"></i>Usage</h5>
-          {% if usage %}
-          <p>
-            CPU: Main {{ usage.main.cpu }}% | Orange {{ usage.orange.cpu }}%
-          </p>
-          <p>
-            RAM: Main {{ usage.main.ram_used }} / {{ usage.main.ram_total }} MB
-            | Orange {{ usage.orange.ram_used }} / {{ usage.orange.ram_total }}
-            MB
-          </p>
-          <p>
-            Temp CPU: Main {{ usage.main.temp }}°C | Orange {{ usage.orange.temp
-            }}°C
-          </p>
+        <!-- Usage - Enhanced -->
+        <div class="card p-3" id="usage-card">
+          <h5 class="card-title">
+            <i class="bi bi-bar-chart icon"></i>Usage
+            <small class="text-muted" id="usage-updated"></small>
+            <i
+              class="bi bi-arrow-repeat text-primary d-none"
+              id="usage-loading"
+              style="font-size: 0.8rem"
+            ></i>
+          </h5>
+          {% if usage and online %}
+          <div class="row">
+            <div class="col-md-6">
+              <h6 class="text-success">Orange Pi</h6>
+              <div class="mb-2">
+                <div class="d-flex justify-content-between">
+                  <span>CPU:</span>
+                  <span class="fw-bold" id="orange-cpu"
+                    >{{ usage.orange.cpu }}%</span
+                  >
+                </div>
+                <div class="progress" style="height: 5px">
+                  <div
+                    class="progress-bar bg-success"
+                    id="orange-cpu-bar"
+                    style="width: 0%"
+                  ></div>
+                </div>
+              </div>
+              <p>
+                <strong>RAM:</strong>
+                <span id="orange-ram"
+                  >{{ usage.orange.ram_used }} / {{ usage.orange.ram_total }}
+                  MB</span
+                >
+              </p>
+              <p>
+                <strong>Temp:</strong>
+                <span id="orange-temp">{{ usage.orange.temp }}°C</span>
+              </p>
+            </div>
+            <div class="col-md-6">
+              <h6 class="text-primary">TrueNAS</h6>
+              <div class="mb-2">
+                <div class="d-flex justify-content-between">
+                  <span>CPU:</span>
+                  <span class="fw-bold" id="main-cpu"
+                    >{{ usage.main.cpu }}%</span
+                  >
+                </div>
+                <div class="progress" style="height: 5px">
+                  <div
+                    class="progress-bar bg-primary"
+                    id="main-cpu-bar"
+                    style="width: 0%"
+                  ></div>
+                </div>
+              </div>
+              <p>
+                <strong>RAM:</strong>
+                <span id="main-ram"
+                  >{{ usage.main.ram_used }} / {{ usage.main.ram_total }}
+                  MB</span
+                >
+              </p>
+              <p>
+                <strong>Temp:</strong>
+                <span id="main-temp">{{ usage.main.temp }}°C</span>
+              </p>
+            </div>
+          </div>
           {% else %}
-          <p>No usage data available.</p>
+          <p id="usage-status">
+            {% if not online %}Server offline - no usage data available{% else
+            %}No usage data available{% endif %}
+          </p>
           {% endif %}
         </div>
 
@@ -253,102 +398,1078 @@
           <h5 class="card-title">
             <i class="bi bi-diagram-3 icon"></i>Network & Traffic
           </h5>
-          {% if traffic %} {% set op_tx = traffic.orange.tx or 0 %} {% set op_rx
-          = traffic.orange.rx or 0 %} {% set main_tx = traffic.main.tx or 0 %}
-          {% set main_rx = traffic.main.rx or 0 %}
+          {% if traffic and online %} {% set op_tx = traffic.orange.tx or 0 %}
+          {% set op_rx = traffic.orange.rx or 0 %} {% set main_tx =
+          traffic.main.tx or 0 %} {% set main_rx = traffic.main.rx or 0 %}
 
           <p>
-            Orange Pi: ↑ {{ (op_tx / 1048576) | round(2) }} MB ↓ {{ (op_rx /
-            1048576) | round(2) }} MB
+            <strong>Orange Pi:</strong> ↑ {{ (op_tx / 1048576) | round(2) }} MB
+            ↓ {{ (op_rx / 1048576) | round(2) }} MB
           </p>
           <p>
-            Main Server: ↑ {{ (main_tx / 1048576) | round(2) }} MB ↓ {{ (main_rx
-            / 1048576) | round(2) }} MB
+            <strong>TrueNAS:</strong> ↑ {{ (main_tx / 1048576) | round(2) }} MB
+            ↓ {{ (main_rx / 1048576) | round(2) }} MB
           </p>
           <p>
-            Total: ↑ {{ ((op_tx + main_tx) / 1048576) | round(2) }} MB ↓ {{
-            ((op_rx + main_rx) / 1048576) | round(2) }} MB
+            <strong>Total:</strong> ↑ {{ ((op_tx + main_tx) / 1048576) |
+            round(2) }} MB ↓ {{ ((op_rx + main_rx) / 1048576) | round(2) }} MB
           </p>
           {% else %}
-          <p>No traffic data available.</p>
+          <p>
+            {% if not online %}Server offline - no traffic data available{% else
+            %}No traffic data available{% endif %}
+          </p>
           {% endif %}
         </div>
 
-        <!-- Notifications -->
+        <!-- Login Activity -->
         <div class="card p-3">
           <h5 class="card-title">
             <i class="bi bi-bell icon"></i>Login Activity
           </h5>
           {% if logins %}
-          <p>
-            Today:
-            <span class="text-success"
-              ><i class="bi bi-check-circle"></i> {{ logins.today.success
-              }}</span
-            >
-            |
-            <span class="text-danger"
-              ><i class="bi bi-x-circle"></i> {{ logins.today.fail }}</span
-            >
-          </p>
-          <p>
-            Yesterday:
-            <span class="text-success"
-              ><i class="bi bi-check-circle"></i> {{ logins.yesterday.success
-              }}</span
-            >
-            |
-            <span class="text-danger"
-              ><i class="bi bi-x-circle"></i> {{ logins.yesterday.fail }}</span
-            >
-          </p>
-          <p>
-            Last 7 Days:
-            <span class="text-success"
-              ><i class="bi bi-check-circle"></i> {{ logins.week.success
-              }}</span
-            >
-            |
-            <span class="text-danger"
-              ><i class="bi bi-x-circle"></i> {{ logins.week.fail }}</span
-            >
-          </p>
+          <div class="row">
+            <div class="col-md-4">
+              <h6>Today</h6>
+              <p>
+                <span class="text-success">
+                  <i class="bi bi-check-circle"></i> {{ logins.today.success }}
+                </span>
+                |
+                <span class="text-danger">
+                  <i class="bi bi-x-circle"></i> {{ logins.today.fail }}
+                </span>
+              </p>
+            </div>
+            <div class="col-md-4">
+              <h6>Yesterday</h6>
+              <p>
+                <span class="text-success">
+                  <i class="bi bi-check-circle"></i> {{ logins.yesterday.success
+                  }}
+                </span>
+                |
+                <span class="text-danger">
+                  <i class="bi bi-x-circle"></i> {{ logins.yesterday.fail }}
+                </span>
+              </p>
+            </div>
+            <div class="col-md-4">
+              <h6>Last 7 Days</h6>
+              <p>
+                <span class="text-success">
+                  <i class="bi bi-check-circle"></i> {{ logins.week.success }}
+                </span>
+                |
+                <span class="text-danger">
+                  <i class="bi bi-x-circle"></i> {{ logins.week.fail }}
+                </span>
+              </p>
+            </div>
+          </div>
           {% else %}
           <p>No login data available.</p>
           {% endif %}
         </div>
 
-        <!-- Docker -->
-        <div class="card p-3">
-          <h5 class="card-title"><i class="bi bi-box-seam icon"></i>Docker</h5>
-          <p>Total: 12</p>
-          <p>Active: 10</p>
-          <p>Inactive: 2</p>
+        <!-- Docker Containers - Enhanced -->
+        <div class="card p-3" id="docker-card">
+          <h5 class="card-title">
+            <i class="bi bi-box-seam icon"></i>Docker Containers
+            <small class="text-muted" id="docker-updated"
+              >{% if docker_stats.last_updated %}{{ docker_stats.last_updated }}
+              {% endif %}</small
+            >
+          </h5>
+          {% if docker_stats and online %}
+          <div class="row text-center mb-3">
+            <div class="col-4">
+              <div class="h4 text-info mb-0" id="docker-total">
+                {{ docker_stats.total }}
+              </div>
+              <small class="text-muted">Total</small>
+            </div>
+            <div class="col-4">
+              <div class="h4 text-success mb-0" id="docker-running">
+                {{ docker_stats.running }}
+              </div>
+              <small class="text-muted">Running</small>
+            </div>
+            <div class="col-4">
+              <div class="h4 text-danger mb-0" id="docker-stopped">
+                {{ docker_stats.stopped }}
+              </div>
+              <small class="text-muted">Stopped</small>
+            </div>
+          </div>
+          {% if docker_stats.avg_cpu > 0 %}
+          <p>
+            <strong>Average CPU:</strong>
+            <span id="docker-cpu">{{ docker_stats.avg_cpu }}%</span>
+          </p>
+          {% endif %}
+
+          <!-- Container Details -->
+          <div
+            class="mt-3"
+            style="max-height: 200px; overflow-y: auto"
+            id="container-list"
+          >
+            {% for container in docker_stats.containers %}
+            <div
+              class="d-flex justify-content-between align-items-center py-1 px-2 mb-1 bg-light rounded"
+            >
+              <small class="fw-bold"
+                >{{ container.name.replace('ix-', '').replace('-1', '')
+                }}</small
+              >
+              <span
+                class="badge {% if container.running %}bg-success{% else %}bg-danger{% endif %}"
+              >
+                {% if container.running %}●{% else %}○{% endif %}
+              </span>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p id="docker-status">
+            {% if not online %}Server offline - no Docker data available{% else
+            %}No Docker data available{% endif %}
+          </p>
+          {% endif %}
         </div>
 
-        <!-- Storage -->
-        <div class="card p-3">
-          <h5 class="card-title"><i class="bi bi-hdd icon"></i>Storage</h5>
-          <p>Orange: 2.1 / 48 GB</p>
-          <p>Main: 6.7 / 12.0 TB</p>
+        <!-- Storage - Real Implementation -->
+        <div class="card p-3" id="storage-card">
+          <h5 class="card-title">
+            <i class="bi bi-hdd icon"></i>Storage
+            <small class="text-muted" id="storage-updated"></small>
+          </h5>
+          {% if storage and online %}
+
+          <!-- ZFS Pools -->
+          {% if storage.zpools %}
+          <h6 class="text-primary mb-2">ZFS Pools</h6>
+          <div id="zpool-list">
+            {% for pool in storage.zpools %}
+            <div
+              class="d-flex justify-content-between align-items-center py-1 px-2 mb-1 bg-light rounded"
+            >
+              <span class="fw-bold">{{ pool.name }}</span>
+              <div class="text-end">
+                <small>{{ pool.size }} | {{ pool.health }}</small>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <!-- Filesystems -->
+          {% if storage.filesystems %}
+          <h6 class="text-success mb-2 mt-3">Filesystems</h6>
+          <div id="filesystem-list">
+            {% for fs in storage.filesystems %}
+            <div
+              class="d-flex justify-content-between align-items-center py-1 px-2 mb-1 bg-light rounded"
+            >
+              <small class="fw-bold">{{ fs.mountpoint }}</small>
+              <div class="text-end">
+                <small
+                  >{{ fs.used }}/{{ fs.size }} ({{ fs.use_percent }})</small
+                >
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %} {% else %}
+          <p id="storage-status">
+            {% if not online %}Server offline - no storage data available{% else
+            %}No storage data available{% endif %}
+          </p>
+          {% endif %}
+        </div>
+
+        <!-- System Information - New Card -->
+        <div class="card p-3" id="system-card">
+          <h5 class="card-title">
+            <i class="bi bi-pc-display icon"></i>System Info
+            <small class="text-muted" id="system-updated"
+              >{% if system_info.last_updated %}{{ system_info.last_updated }}
+              {% endif %}</small
+            >
+          </h5>
+          {% if system_info and online %}
+
+          <!-- Uptime -->
+          {% if system_info.uptime != 'N/A' %}
+          <p>
+            <strong>Uptime:</strong>
+            <span id="system-uptime">{{ system_info.uptime }}</span>
+          </p>
+          {% endif %}
+
+          <!-- CPU Info -->
+          {% if system_info.cpu %}
+          <div class="mb-2">
+            <h6 class="text-info mb-1">CPU</h6>
+            <div id="cpu-info">
+              {% if system_info.cpu.model %}
+              <small><strong>Model:</strong> {{ system_info.cpu.model }}</small
+              ><br />
+              {% endif %} {% if system_info.cpu.count %}
+              <small><strong>CPUs:</strong> {{ system_info.cpu.count }}</small>
+              {% endif %} {% if system_info.cpu.cores %} |
+              <small><strong>Cores:</strong> {{ system_info.cpu.cores }}</small>
+              {% endif %}
+            </div>
+          </div>
+          {% endif %}
+
+          <!-- Memory Info -->
+          {% if system_info.memory %}
+          <div class="mb-2">
+            <h6 class="text-warning mb-1">Memory</h6>
+            <div id="memory-info">
+              <small
+                ><strong>Total:</strong> {{ system_info.memory.total }}</small
+              >
+              |
+              <small
+                ><strong>Used:</strong> {{ system_info.memory.used }}</small
+              >
+              |
+              <small
+                ><strong>Available:</strong> {{ system_info.memory.available
+                }}</small
+              >
+            </div>
+          </div>
+          {% endif %} {% else %}
+          <p id="system-status">
+            {% if not online %}Server offline - no system data available{% else
+            %}No system data available{% endif %}
+          </p>
+          {% endif %}
+        </div>
+
+        <!-- Network Information - New Card -->
+        <div class="card p-3" id="network-card">
+          <h5 class="card-title">
+            <i class="bi bi-router icon"></i>Network
+            <small class="text-muted" id="network-updated">
+              {% if network.last_updated %}{{ network.last_updated }}{% endif %}
+            </small>
+          </h5>
+          {% if network and online %} {% if network.default_gateway != 'N/A' %}
+          <p>
+            <strong>Gateway:</strong>
+            <span id="network-gateway">{{ network.default_gateway }}</span>
+          </p>
+          {% endif %}
+
+          <!-- Network Interfaces -->
+          {% if network.interfaces %}
+          <h6 class="text-primary mb-2">Interfaces</h6>
+          <div id="interface-list">
+            {% for interface in network.interfaces %}
+            <div
+              class="d-flex justify-content-between align-items-center py-1 px-2 mb-1 bg-light rounded"
+            >
+              <span class="fw-bold">{{ interface.name }}</span>
+              <div class="text-end">
+                <span
+                  class="badge {% if interface.state == 'UP' %}bg-success{% else %}bg-secondary{% endif %}"
+                  >{{ interface.state }}</span
+                >
+                {% if interface.addresses %}
+                <br /><small
+                  >{{ interface.addresses[0] if interface.addresses else 'No IP'
+                  }}</small
+                >
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %} {% else %}
+          <p id="network-status">
+            {% if not online %}Server offline - no network data available{% else
+            %}No network data available{% endif %}
+          </p>
+          {% endif %}
+        </div>
+
+        <!-- System Alerts - New Card -->
+        <div class="card p-3" id="alerts-card">
+          <h5 class="card-title">
+            <i class="bi bi-exclamation-triangle icon"></i>System Alerts
+            <span
+              class="badge {% if alerts.count > 0 %}bg-warning{% else %}bg-success{% endif %} ms-2"
+              id="alerts-count"
+            >
+              {{ alerts.count if alerts.count > 0 else '0' }}
+            </span>
+            <small class="text-muted" id="alerts-updated">
+              {% if alerts.last_updated %}{{ alerts.last_updated }}{% endif %}
+            </small>
+          </h5>
+          {% if alerts and alerts.alerts and online %}
+          <div id="alerts-list" style="max-height: 200px; overflow-y: auto">
+            {% for alert in alerts.alerts %}
+            <div class="alert alert-{{ alert.type }} py-2 mb-2">
+              <i class="bi bi-{{ alert.icon }} me-2"></i>{{ alert.message }}
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="alert alert-success py-2 mb-0" id="no-alerts">
+            <i class="bi bi-check-circle me-2"></i>{% if not online %}Server
+            offline - no alerts available{% else %}All systems normal{% endif %}
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Quick Actions - New Card -->
+        <div class="card p-3" id="quick-actions-card">
+          <h5 class="card-title">
+            <i class="bi bi-lightning icon"></i>Quick Actions
+          </h5>
+          {% if online %}
+          <div class="row g-2">
+            <div class="col-6">
+              <button
+                class="btn btn-outline-primary btn-sm w-100"
+                onclick="executeQuickAction('docker-prune')"
+              >
+                <i class="bi bi-trash3"></i> Clean Docker
+              </button>
+            </div>
+            <div class="col-6">
+              <button
+                class="btn btn-outline-info btn-sm w-100"
+                onclick="executeQuickAction('container-health')"
+              >
+                <i class="bi bi-heart-pulse"></i> Health Check
+              </button>
+            </div>
+            <div class="col-6">
+              <button
+                class="btn btn-outline-warning btn-sm w-100"
+                onclick="executeQuickAction('check-disk')"
+              >
+                <i class="bi bi-hdd"></i> Check Disk
+              </button>
+            </div>
+            <div class="col-6">
+              <button
+                class="btn btn-outline-secondary btn-sm w-100"
+                onclick="executeQuickAction('update-packages')"
+              >
+                <i class="bi bi-arrow-repeat"></i> Check Updates
+              </button>
+            </div>
+          </div>
+          {% else %}
+          <p class="text-muted mb-0">Server offline - actions unavailable</p>
+          {% endif %}
+        </div>
+
+        <!-- Security Monitor - New Card -->
+        <div class="card p-3" id="security-card">
+          <h5 class="card-title">
+            <i class="bi bi-shield-check icon"></i>Security Monitor
+            <small class="text-muted" id="security-updated">
+              {% if security.last_updated %}{{ security.last_updated }}{% endif
+              %}
+            </small>
+          </h5>
+          {% if security and online %}
+          <div class="row text-center mb-3">
+            <div class="col-6">
+              <div
+                class="h5 {% if security.failed_logins > 0 %}text-danger{% else %}text-success{% endif %} mb-0"
+                id="failed-logins"
+              >
+                {{ security.failed_logins }}
+              </div>
+              <small class="text-muted">Failed Logins (1h)</small>
+            </div>
+            <div class="col-6">
+              <div class="h5 text-info mb-0" id="active-connections">
+                {{ security.active_connections }}
+              </div>
+              <small class="text-muted">Active SSH</small>
+            </div>
+          </div>
+          {% if security.ssh_attempts %}
+          <h6 class="text-warning mb-2">Recent Attempts</h6>
+          <div id="ssh-attempts" style="max-height: 100px; overflow-y: auto">
+            {% for attempt in security.ssh_attempts[-5:] %}
+            <div
+              class="d-flex justify-content-between py-1 px-2 mb-1 bg-light rounded"
+            >
+              <small class="text-danger">{{ attempt.ip }}</small>
+              <small class="text-muted">{{ attempt.time }}</small>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %} {% else %}
+          <p id="security-status">
+            {% if not online %}Server offline - no security data available{%
+            else %}No security data available{% endif %}
+          </p>
+          {% endif %}
+        </div>
+
+        <!-- Enhanced Network & Bandwidth -->
+        <div class="card p-3" id="bandwidth-card">
+          <h5 class="card-title">
+            <i class="bi bi-speedometer2 icon"></i>Network Bandwidth
+            <small class="text-muted" id="bandwidth-updated">
+              {% if bandwidth.last_updated %}{{ bandwidth.last_updated }}{%
+              endif %}
+            </small>
+          </h5>
+          {% if bandwidth and online %}
+          <div class="row text-center mb-3">
+            <div class="col-6">
+              <div class="h5 text-success mb-0" id="total-rx">
+                {{ bandwidth.total_rx }} MB
+              </div>
+              <small class="text-muted">↓ Total RX</small>
+            </div>
+            <div class="col-6">
+              <div class="h5 text-primary mb-0" id="total-tx">
+                {{ bandwidth.total_tx }} MB
+              </div>
+              <small class="text-muted">↑ Total TX</small>
+            </div>
+          </div>
+
+          <!-- Interface Details -->
+          {% if bandwidth.interfaces %}
+          <h6 class="text-info mb-2">Interface Details</h6>
+          <div
+            id="bandwidth-interfaces"
+            style="max-height: 150px; overflow-y: auto"
+          >
+            {% for name, iface in bandwidth.interfaces.items() %}
+            <div
+              class="d-flex justify-content-between align-items-center py-1 px-2 mb-1 bg-light rounded"
+            >
+              <span class="fw-bold">{{ name }}</span>
+              <div class="text-end">
+                <small>↓{{ iface.rx_mb }}MB ↑{{ iface.tx_mb }}MB</small>
+                {% if iface.rx_errors > 0 or iface.tx_errors > 0 %}
+                <br /><small class="text-warning"
+                  >Errors: {{ iface.rx_errors + iface.tx_errors }}</small
+                >
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %} {% else %}
+          <p id="bandwidth-status">
+            {% if not online %}Server offline - no bandwidth data available{%
+            else %}No bandwidth data available{% endif %}
+          </p>
+          {% endif %}
+        </div>
+
+        <!-- Container Logs Viewer - New Card -->
+        <div class="card p-3" id="logs-card">
+          <h5 class="card-title">
+            <i class="bi bi-journal-text icon"></i>Container Logs
+          </h5>
+          {% if docker_stats and docker_stats.containers and online %}
+          <div class="mb-3">
+            <select
+              class="form-select form-select-sm"
+              id="container-select"
+              onchange="loadContainerLogs()"
+            >
+              <option value="">Select container...</option>
+              {% for container in docker_stats.containers %}
+              <option value="{{ container.name }}">
+                {{ container.name.replace('ix-', '').replace('-1', '') }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div
+            id="logs-content"
+            style="
+              max-height: 200px;
+              overflow-y: auto;
+              background: #f8f9fa;
+              padding: 10px;
+              border-radius: 5px;
+              font-family: monospace;
+              font-size: 0.85rem;
+            "
+          >
+            <div class="text-muted">Select a container to view logs...</div>
+          </div>
+          {% else %}
+          <p class="text-muted mb-0">
+            {% if not online %}Server offline - logs unavailable{% else %}No
+            containers available{% endif %}
+          </p>
+          {% endif %}
         </div>
       </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-      function serviceAction(service, action) {
-        fetch(`/service/${service}/${action}`, {
-          method: "POST",
-        }).then((resp) => {
-          if (resp.ok) {
-            location.reload();
-          } else {
-            alert("Failed to " + action + " " + service);
+      function confirmLogout() {
+        return confirm("Are you sure you want to logout?");
+      }
+
+      function confirmShutdown() {
+        Swal.fire({
+          title: "Are you sure?",
+          text: "This will shut down the TrueNAS server!",
+          icon: "warning",
+          showCancelButton: true,
+          confirmButtonColor: "#d33",
+          cancelButtonColor: "#3085d6",
+          confirmButtonText: "Yes, shut it down",
+          reverseButtons: true,
+        }).then((result) => {
+          if (result.isConfirmed) {
+            fetch("/shutdown", { method: "POST" })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  Swal.fire(
+                    "Shutdown Initiated",
+                    "The server shutdown command has been sent.",
+                    "success"
+                  );
+                  setTimeout(() => location.reload(), 3000);
+                } else {
+                  Swal.fire(
+                    "Error",
+                    data.error || "Failed to shutdown server",
+                    "error"
+                  );
+                }
+              })
+              .catch((error) => {
+                Swal.fire("Error", "Failed to send shutdown command", "error");
+              });
           }
         });
       }
+
+      function confirmRestart() {
+        Swal.fire({
+          title: "Are you sure?",
+          text: "This will restart the TrueNAS server!",
+          icon: "question",
+          showCancelButton: true,
+          confirmButtonColor: "#f0ad4e",
+          cancelButtonColor: "#3085d6",
+          confirmButtonText: "Yes, restart it",
+          reverseButtons: true,
+        }).then((result) => {
+          if (result.isConfirmed) {
+            fetch("/restart", { method: "POST" })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  Swal.fire(
+                    "Restart Initiated",
+                    "The server restart command has been sent.",
+                    "success"
+                  );
+                  setTimeout(() => location.reload(), 3000);
+                } else {
+                  Swal.fire(
+                    "Error",
+                    data.error || "Failed to restart server",
+                    "error"
+                  );
+                }
+              })
+              .catch((error) => {
+                Swal.fire("Error", "Failed to send restart command", "error");
+              });
+          }
+        });
+      }
+
+      function wakeUpServer() {
+        Swal.fire({
+          title: "Wake Up Server",
+          text: "Sending Wake-on-LAN packet to TrueNAS server...",
+          icon: "info",
+          showCancelButton: true,
+          confirmButtonColor: "#28a745",
+          confirmButtonText: "Send Wake-up Signal",
+        }).then((result) => {
+          if (result.isConfirmed) {
+            fetch("/wakeup", { method: "POST" })
+              .then((response) => response.json())
+              .then((data) => {
+                if (data.success) {
+                  Swal.fire(
+                    "Wake-up Signal Sent",
+                    "Please wait a moment for the server to start up.",
+                    "success"
+                  );
+                  setTimeout(() => location.reload(), 10000);
+                } else {
+                  Swal.fire(
+                    "Error",
+                    data.error || "Failed to send wake-up signal",
+                    "error"
+                  );
+                }
+              })
+              .catch((error) => {
+                Swal.fire("Error", "Failed to send wake-up signal", "error");
+              });
+          }
+        });
+      }
+
+      function serviceAction(service, action) {
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="bi bi-hourglass-split"></i> Working...';
+        button.disabled = true;
+
+        fetch(`/service/${service}/${action}`, {
+          method: "POST",
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              Swal.fire("Success", data.message, "success");
+              setTimeout(() => location.reload(), 2000);
+            } else {
+              Swal.fire(
+                "Error",
+                data.error || `Failed to ${action} ${service}`,
+                "error"
+              );
+              button.innerHTML = originalText;
+              button.disabled = false;
+            }
+          })
+          .catch((error) => {
+            Swal.fire("Error", `Failed to ${action} ${service}`, "error");
+            button.innerHTML = originalText;
+            button.disabled = false;
+          });
+      }
+
+      // Real-time data updates every 10 minutes
+      let updateInterval;
+      let countdownInterval;
+      let nextUpdateTime = 10 * 60; // 10 minutes in seconds
+
+      function updateDashboardData() {
+        fetch("/api/dashboard-data")
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              console.error("Failed to fetch data:", data.error);
+              return;
+            }
+
+            updateDashboardCards(data);
+            nextUpdateTime = 10 * 60; // Reset countdown
+            console.log("Dashboard data updated at", data.timestamp);
+          })
+          .catch((error) => {
+            console.error("Error fetching dashboard data:", error);
+          });
+      }
+
+      function updateDashboardCards(data) {
+        // Update timestamps
+        if (data.docker_stats && data.docker_stats.last_updated) {
+          document.getElementById("docker-updated").textContent =
+            data.docker_stats.last_updated;
+        }
+        if (data.network && data.network.last_updated) {
+          document.getElementById("network-updated").textContent =
+            data.network.last_updated;
+        }
+        if (data.system_info && data.system_info.last_updated) {
+          document.getElementById("system-updated").textContent =
+            data.system_info.last_updated;
+        }
+
+        // Update Docker stats
+        if (data.docker_stats) {
+          const dockerTotal = document.getElementById("docker-total");
+          const dockerRunning = document.getElementById("docker-running");
+          const dockerStopped = document.getElementById("docker-stopped");
+          const dockerCpu = document.getElementById("docker-cpu");
+
+          if (dockerTotal) dockerTotal.textContent = data.docker_stats.total;
+          if (dockerRunning)
+            dockerRunning.textContent = data.docker_stats.running;
+          if (dockerStopped)
+            dockerStopped.textContent = data.docker_stats.stopped;
+          if (dockerCpu && data.docker_stats.avg_cpu > 0) {
+            dockerCpu.textContent = data.docker_stats.avg_cpu + "%";
+          }
+
+          // Update container list
+          const containerList = document.getElementById("container-list");
+          if (containerList && data.docker_stats.containers) {
+            let html = "";
+            data.docker_stats.containers.forEach((container) => {
+              const badgeClass = container.running ? "bg-success" : "bg-danger";
+              const icon = container.running ? "●" : "○";
+              const displayName = container.name
+                .replace("ix-", "")
+                .replace("-1", "");
+
+              html += `
+                <div class="d-flex justify-content-between align-items-center py-1 px-2 mb-1 bg-light rounded">
+                  <small class="fw-bold">${displayName}</small>
+                  <span class="badge ${badgeClass}">${icon}</span>
+                </div>
+              `;
+            });
+            containerList.innerHTML = html;
+          }
+        }
+
+        // Update storage info
+        if (data.storage) {
+          // Update ZFS pools
+          const zpoolList = document.getElementById("zpool-list");
+          if (zpoolList && data.storage.zpools) {
+            let html = "";
+            data.storage.zpools.forEach((pool) => {
+              html += `
+                <div class="d-flex justify-content-between align-items-center py-1 px-2 mb-1 bg-light rounded">
+                  <span class="fw-bold">${pool.name}</span>
+                  <div class="text-end">
+                    <small>${pool.size} | ${pool.health}</small>
+                  </div>
+                </div>
+              `;
+            });
+            zpoolList.innerHTML = html;
+          }
+
+          // Update filesystems
+          const filesystemList = document.getElementById("filesystem-list");
+          if (filesystemList && data.storage.filesystems) {
+            let html = "";
+            data.storage.filesystems.forEach((fs) => {
+              html += `
+                <div class="d-flex justify-content-between align-items-center py-1 px-2 mb-1 bg-light rounded">
+                  <small class="fw-bold">${fs.mountpoint}</small>
+                  <div class="text-end">
+                    <small>${fs.used}/${fs.size} (${fs.use_percent})</small>
+                  </div>
+                </div>
+              `;
+            });
+            filesystemList.innerHTML = html;
+          }
+        }
+
+        // Update system info
+        if (data.system_info) {
+          const systemUptime = document.getElementById("system-uptime");
+          if (systemUptime && data.system_info.uptime) {
+            systemUptime.textContent = data.system_info.uptime;
+          }
+
+          const memoryInfo = document.getElementById("memory-info");
+          if (memoryInfo && data.system_info.memory) {
+            const mem = data.system_info.memory;
+            memoryInfo.innerHTML = `
+              <small><strong>Total:</strong> ${mem.total}</small> |
+              <small><strong>Used:</strong> ${mem.used}</small> |
+              <small><strong>Available:</strong> ${mem.available}</small>
+            `;
+          }
+        }
+
+        // Update network info
+        if (data.network) {
+          const networkGateway = document.getElementById("network-gateway");
+          if (networkGateway && data.network.default_gateway) {
+            networkGateway.textContent = data.network.default_gateway;
+          }
+
+          const interfaceList = document.getElementById("interface-list");
+          if (interfaceList && data.network.interfaces) {
+            let html = "";
+            data.network.interfaces.forEach((interface) => {
+              const badgeClass =
+                interface.state === "UP" ? "bg-success" : "bg-secondary";
+              const ip =
+                interface.addresses && interface.addresses.length > 0
+                  ? interface.addresses[0]
+                  : "No IP";
+
+              html += `
+                <div class="d-flex justify-content-between align-items-center py-1 px-2 mb-1 bg-light rounded">
+                  <span class="fw-bold">${interface.name}</span>
+                  <div class="text-end">
+                    <span class="badge ${badgeClass}">${interface.state}</span>
+                    ${interface.addresses ? `<br><small>${ip}</small>` : ""}
+                  </div>
+                </div>
+              `;
+            });
+            interfaceList.innerHTML = html;
+          }
+        }
+
+        // Update usage data
+        if (data.usage) {
+          // Orange Pi usage
+          if (data.usage.orange) {
+            const orangeCpu = document.getElementById("orange-cpu");
+            const orangeRam = document.getElementById("orange-ram");
+            const orangeTemp = document.getElementById("orange-temp");
+
+            if (orangeCpu) {
+              orangeCpu.textContent = data.usage.orange.cpu + "%";
+              // Update progress bar
+              const progressBar = orangeCpu
+                .closest(".col-md-6")
+                .querySelector(".progress-bar");
+              if (progressBar) {
+                progressBar.style.width = data.usage.orange.cpu + "%";
+              }
+            }
+            if (orangeRam) {
+              orangeRam.textContent = `${data.usage.orange.ram_used} / ${data.usage.orange.ram_total} MB`;
+            }
+            if (orangeTemp) {
+              orangeTemp.textContent = data.usage.orange.temp + "°C";
+            }
+          }
+
+          // TrueNAS usage
+          if (data.usage.main) {
+            const mainCpu = document.getElementById("main-cpu");
+            const mainRam = document.getElementById("main-ram");
+            const mainTemp = document.getElementById("main-temp");
+
+            if (mainCpu) {
+              mainCpu.textContent = data.usage.main.cpu + "%";
+              // Update progress bar
+              const progressBar = mainCpu
+                .closest(".col-md-6")
+                .querySelector(".progress-bar");
+              if (progressBar) {
+                progressBar.style.width = data.usage.main.cpu + "%";
+              }
+            }
+            if (mainRam) {
+              mainRam.textContent = `${data.usage.main.ram_used} / ${data.usage.main.ram_total} MB`;
+            }
+            if (mainTemp) {
+              mainTemp.textContent = data.usage.main.temp + "°C";
+            }
+          }
+        }
+
+        // Update alerts
+        if (data.alerts) {
+          const alertsCount = document.getElementById("alerts-count");
+          const alertsList = document.getElementById("alerts-list");
+          const noAlerts = document.getElementById("no-alerts");
+
+          if (alertsCount) {
+            alertsCount.textContent = data.alerts.count;
+            alertsCount.className = `badge ms-2 ${
+              data.alerts.count > 0 ? "bg-warning" : "bg-success"
+            }`;
+          }
+
+          if (data.alerts.alerts && data.alerts.alerts.length > 0) {
+            let alertsHtml = "";
+            data.alerts.alerts.forEach((alert) => {
+              alertsHtml += `
+                <div class="alert alert-${alert.type} py-2 mb-2">
+                  <i class="bi bi-${alert.icon} me-2"></i>${alert.message}
+                </div>
+              `;
+            });
+            if (alertsList) alertsList.innerHTML = alertsHtml;
+            if (noAlerts) noAlerts.style.display = "none";
+          } else {
+            if (alertsList) alertsList.innerHTML = "";
+            if (noAlerts) {
+              noAlerts.innerHTML =
+                '<i class="bi bi-check-circle me-2"></i>All systems normal';
+              noAlerts.style.display = "block";
+            }
+          }
+        }
+
+        // Update security info
+        if (data.security) {
+          const failedLogins = document.getElementById("failed-logins");
+          const activeConnections =
+            document.getElementById("active-connections");
+
+          if (failedLogins) {
+            failedLogins.textContent = data.security.failed_logins;
+            failedLogins.className = `h5 mb-0 ${
+              data.security.failed_logins > 0 ? "text-danger" : "text-success"
+            }`;
+          }
+          if (activeConnections) {
+            activeConnections.textContent = data.security.active_connections;
+          }
+        }
+
+        // Update bandwidth info
+        if (data.bandwidth) {
+          const totalRx = document.getElementById("total-rx");
+          const totalTx = document.getElementById("total-tx");
+
+          if (totalRx) totalRx.textContent = data.bandwidth.total_rx + " MB";
+          if (totalTx) totalTx.textContent = data.bandwidth.total_tx + " MB";
+        }
+
+        // Show update indicator briefly
+        const loadingIndicator = document.getElementById("usage-loading");
+        if (loadingIndicator) {
+          loadingIndicator.classList.remove("d-none");
+          setTimeout(() => {
+            loadingIndicator.classList.add("d-none");
+          }, 2000);
+        }
+      }
+
+      function startUpdateTimer() {
+        // Update every 10 minutes
+        updateInterval = setInterval(updateDashboardData, 10 * 60 * 1000);
+
+        // Countdown timer (optional visual feedback)
+        countdownInterval = setInterval(() => {
+          nextUpdateTime--;
+          if (nextUpdateTime <= 0) {
+            nextUpdateTime = 10 * 60;
+          }
+        }, 1000);
+      }
+
+      // Initialize progress bars on page load
+      function initializeProgressBars() {
+        // Initialize Orange Pi CPU bar
+        const orangeBar = document.getElementById("orange-cpu-bar");
+        if (orangeBar) {
+          orangeBar.style.width =
+            "{{ usage.orange.cpu if usage and usage.orange else 0 }}%";
+        }
+
+        // Initialize TrueNAS CPU bar
+        const mainBar = document.getElementById("main-cpu-bar");
+        if (mainBar) {
+          mainBar.style.width =
+            "{{ usage.main.cpu if usage and usage.main else 0 }}%";
+        }
+      }
+
+      // Initial data fetch and start timer
+      document.addEventListener("DOMContentLoaded", function () {
+        // Initialize progress bars with server data
+        initializeProgressBars();
+
+        // Start the update timer
+        startUpdateTimer();
+
+        // Perform initial update after 30 seconds to refresh any stale data
+        setTimeout(updateDashboardData, 30000);
+      });
+
+      // Quick Actions functionality
+      function executeQuickAction(action) {
+        const button = event.target;
+        const originalText = button.innerHTML;
+        button.innerHTML = '<i class="bi bi-hourglass-split"></i> Working...';
+        button.disabled = true;
+
+        fetch("/api/quick-action", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ action: action }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              Swal.fire({
+                title: "Action Completed",
+                html: `<pre style="text-align: left; font-size: 0.85rem; max-height: 300px; overflow-y: auto;">${data.output}</pre>`,
+                icon: "success",
+                confirmButtonText: "OK",
+              });
+            } else {
+              Swal.fire("Error", data.error || "Action failed", "error");
+            }
+            button.innerHTML = originalText;
+            button.disabled = false;
+          })
+          .catch((error) => {
+            Swal.fire("Error", "Failed to execute action", "error");
+            button.innerHTML = originalText;
+            button.disabled = false;
+          });
+      }
+
+      // Container Logs functionality
+      function loadContainerLogs() {
+        const containerSelect = document.getElementById("container-select");
+        const logsContent = document.getElementById("logs-content");
+        const containerName = containerSelect.value;
+
+        if (!containerName) {
+          logsContent.innerHTML =
+            '<div class="text-muted">Select a container to view logs...</div>';
+          return;
+        }
+
+        logsContent.innerHTML =
+          '<div class="text-info"><i class="bi bi-hourglass-split"></i> Loading logs...</div>';
+
+        fetch(`/api/container-logs/${containerName}?lines=100`)
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.logs && data.logs.length > 0) {
+              let logsHtml = "";
+              data.logs.forEach((log) => {
+                logsHtml += `<div style="margin-bottom: 2px; word-wrap: break-word;">${log.line}</div>`;
+              });
+              logsContent.innerHTML = logsHtml;
+              logsContent.scrollTop = logsContent.scrollHeight;
+            } else {
+              logsContent.innerHTML =
+                '<div class="text-muted">No logs available for this container.</div>';
+            }
+          })
+          .catch((error) => {
+            logsContent.innerHTML =
+              '<div class="text-danger">Error loading logs: ' +
+              error.message +
+              "</div>";
+          });
+      }
     </script>
+
     <footer>
-      &copy; {{ 2024 }} Home Server Dashboard. Powered by Orange Pi.
+      &copy; {{ 2024 }} Home Server Dashboard. Powered by TrueNAS & Orange Pi.
     </footer>
   </body>
 </html>

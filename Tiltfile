@@ -1,11 +1,12 @@
-# Build image
-docker_build('home-server', '.')
+# Use docker-compose for local development
+docker_compose('docker-compose.dev.yml')
 
-# Pokreni app u kontejneru sa mount i port (automatski ugasi prethodni)
-local_resource(
-    'flask-app',
-    'docker run --rm -p 8899:8888 -v .:/app home-server',
-    deps=['.'],
-    auto_init=True
-)
+# Build the Docker image and connect it to the service
+docker_build('home-server', '.', live_update=[
+    sync('.', '/app'),
+    run('pip install -r requirements.txt', trigger=['requirements.txt'])
+])
+
+# Configure the Docker Compose resource
+dc_resource('home-server-dev')
 

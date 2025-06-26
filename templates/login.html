@@ -45,6 +45,7 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        padding: 80px 20px 20px 20px;
       }
       .login-box {
         background: rgba(255, 255, 255, 0.95);
@@ -54,8 +55,48 @@
         width: 100%;
         max-width: 400px;
         animation: fadeInUp 0.7s cubic-bezier(0.39, 0.575, 0.565, 1) both;
-        margin-top: 80px;
       }
+
+      /* Mobile responsive adjustments */
+      @media (max-width: 768px) {
+        .login-container {
+          padding: 80px 15px 15px 15px;
+        }
+        .login-box {
+          max-width: 350px;
+          padding: 30px 24px 24px 24px;
+          border-radius: 14px;
+        }
+        .navbar-brand {
+          font-size: 1.1rem;
+        }
+      }
+
+      @media (max-width: 576px) {
+        .login-container {
+          padding: 80px 10px 10px 10px;
+        }
+        .login-box {
+          max-width: 320px;
+          padding: 24px 20px 20px 20px;
+          border-radius: 12px;
+        }
+        .login-icon {
+          font-size: 2.4rem !important;
+        }
+        h2 {
+          font-size: 1.5rem !important;
+        }
+        .form-control {
+          font-size: 1rem !important;
+          padding: 10px 12px !important;
+        }
+        .btn {
+          font-size: 1rem !important;
+          padding: 10px 0 !important;
+        }
+      }
+
       @keyframes fadeInUp {
         0% {
           opacity: 0;
@@ -79,6 +120,20 @@
         margin-bottom: 12px;
         text-align: center;
         font-weight: 500;
+        padding: 10px;
+        background: rgba(217, 83, 79, 0.1);
+        border-radius: 8px;
+        border-left: 4px solid #d9534f;
+      }
+      .success {
+        color: #5cb85c;
+        margin-bottom: 12px;
+        text-align: center;
+        font-weight: 500;
+        padding: 10px;
+        background: rgba(92, 184, 92, 0.1);
+        border-radius: 8px;
+        border-left: 4px solid #5cb85c;
       }
       .form-control {
         border-radius: 8px;
@@ -86,11 +141,19 @@
         padding: 12px 14px;
         box-shadow: none;
         border: 1px solid #e0e0e0;
-        transition: border-color 0.2s;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        text-align: center;
+        letter-spacing: 3px;
+        font-weight: 600;
       }
       .form-control:focus {
         border-color: #2e8b57;
         box-shadow: 0 0 0 2px #2e8b5733;
+      }
+      .form-control::placeholder {
+        color: #888;
+        letter-spacing: normal;
+        font-weight: normal;
       }
       .btn-success {
         border-radius: 8px;
@@ -100,23 +163,70 @@
         border: none;
         transition: background 0.2s, box-shadow 0.2s;
         box-shadow: 0 2px 8px 0 rgba(46, 139, 87, 0.08);
+        font-weight: 500;
       }
       .btn-success:hover,
       .btn-success:focus {
         background: linear-gradient(90deg, #24914b 60%, #38b2ac 100%);
         box-shadow: 0 4px 16px 0 rgba(46, 139, 87, 0.13);
       }
+      .btn-success:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        opacity: 0.6;
+      }
+      .btn-secondary {
+        border-radius: 8px;
+        font-size: 1.1rem;
+        padding: 12px 0;
+        background: #6c757d;
+        border: none;
+        font-weight: 500;
+      }
       h2 {
         font-weight: 700;
         color: #2e8b57;
         margin-bottom: 18px;
         letter-spacing: 1px;
+        text-align: center;
+      }
+      .icon {
+        font-size: 1.2em;
+        margin-right: 6px;
+        vertical-align: -0.15em;
+      }
+      .countdown {
+        text-align: center;
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 15px;
+        font-weight: 500;
+      }
+      .countdown.warning {
+        color: #ff6b35;
+        font-weight: 600;
+      }
+      .otp-section {
+        transition: all 0.3s ease;
+      }
+      .fade-in {
+        animation: fadeIn 0.3s ease-in;
+      }
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
     </style>
   </head>
   <body>
     <nav class="navbar navbar-expand-lg navbar-dark px-3 sticky-top">
-      <a class="navbar-brand fw-bold" href="/dashboard"
+      <a class="navbar-brand fw-bold" href="/"
         ><i class="bi bi-hdd-network icon"></i>Home Server</a
       >
     </nav>
@@ -125,33 +235,236 @@
         <div class="login-icon">
           <i class="bi bi-shield-lock-fill"></i>
         </div>
-        <h2 class="text-center mb-3">Login</h2>
+        <h2 class="mb-3">Secure Access</h2>
+
         {% if error %}
-        <div class="error">{{ error }}</div>
+        <div class="error">
+          <i class="bi bi-exclamation-triangle"></i> {{ error }}
+        </div>
         {% endif %}
-        <form method="POST">
-          <div class="mb-3">
-            <input
-              type="text"
-              name="username"
-              class="form-control"
-              placeholder="Username"
-              required
-              autofocus
-            />
+
+        <!-- Initial State: Request OTP -->
+        <div
+          id="request-otp-section"
+          {%
+          if
+          otp_requested
+          %}style="display: none;"
+          {%
+          endif
+          %}
+        >
+          <form method="POST" id="request-otp-form">
+            <input type="hidden" name="action" value="request_otp" />
+            <div class="mb-3 text-center">
+              <p class="text-muted mb-3">
+                Click below to receive a secure access code via Telegram
+              </p>
+            </div>
+            <button
+              type="submit"
+              class="btn btn-success w-100"
+              id="request-otp-btn"
+            >
+              <i class="bi bi-telegram"></i> Get Access Code
+            </button>
+          </form>
+        </div>
+
+        <!-- OTP Verification State -->
+        <div
+          id="verify-otp-section"
+          class="otp-section"
+          {%
+          if
+          not
+          otp_requested
+          %}style="display: none;"
+          {%
+          endif
+          %}
+        >
+          <div id="countdown" class="countdown"></div>
+
+          {% if otp_requested %}
+          <div class="success fade-in">
+            <i class="bi bi-check-circle"></i> Access code sent to Telegram!
           </div>
-          <div class="mb-3">
-            <input
-              type="password"
-              name="password"
-              class="form-control"
-              placeholder="Password"
-              required
-            />
-          </div>
-          <button type="submit" class="btn btn-success w-100">Login</button>
-        </form>
+          {% endif %}
+
+          <form method="POST" id="verify-otp-form">
+            <input type="hidden" name="action" value="verify_otp" />
+            <div class="mb-3">
+              <input
+                type="text"
+                name="otp"
+                id="otp-input"
+                class="form-control"
+                placeholder="Enter 6-digit code"
+                maxlength="6"
+                pattern="[0-9]{6}"
+                required
+                autofocus
+                autocomplete="one-time-code"
+              />
+            </div>
+            <button type="submit" class="btn btn-success w-100 mb-2">
+              <i class="bi bi-key"></i> Verify Code
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary w-100"
+              id="cancel-btn"
+              onclick="cancelOTP()"
+            >
+              <i class="bi bi-arrow-left"></i> Cancel
+            </button>
+          </form>
+        </div>
+
+        <div class="text-center mt-3">
+          <small class="text-muted">TrueNAS Server Dashboard</small>
+        </div>
       </div>
     </div>
+
+    <!-- Pass server data to JavaScript -->
+    {% if otp_requested and expires_at %}
+    <div
+      id="server-data"
+      data-expires-at="{{ expires_at }}"
+      style="display: none"
+    ></div>
+    {% endif %}
+
+    <script>
+      let countdownTimer;
+      let timeLeft;
+
+      // Initialize countdown if OTP was requested
+      const serverDataElement = document.getElementById("server-data");
+      if (serverDataElement) {
+        const expiresAt = parseFloat(
+          serverDataElement.getAttribute("data-expires-at")
+        );
+        const now = Date.now() / 1000;
+        timeLeft = Math.max(0, Math.floor(expiresAt - now));
+
+        if (timeLeft > 0) {
+          document.addEventListener("DOMContentLoaded", function () {
+            startCountdown();
+          });
+        } else {
+          document.addEventListener("DOMContentLoaded", function () {
+            showRequestForm();
+          });
+        }
+      }
+
+      function startCountdown() {
+        const countdownElement = document.getElementById("countdown");
+
+        countdownTimer = setInterval(() => {
+          if (timeLeft <= 0) {
+            clearInterval(countdownTimer);
+            showRequestForm();
+            return;
+          }
+
+          const minutes = Math.floor(timeLeft / 60);
+          const seconds = timeLeft % 60;
+          const timeStr = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+
+          if (timeLeft <= 30) {
+            countdownElement.className = "countdown warning";
+            countdownElement.innerHTML = `<i class="bi bi-clock-fill"></i> Code expires in ${timeStr}`;
+          } else {
+            countdownElement.className = "countdown";
+            countdownElement.innerHTML = `<i class="bi bi-clock"></i> Code expires in ${timeStr}`;
+          }
+
+          timeLeft--;
+        }, 1000);
+      }
+
+      function showRequestForm() {
+        clearInterval(countdownTimer);
+        document.getElementById("request-otp-section").style.display = "block";
+        document.getElementById("verify-otp-section").style.display = "none";
+      }
+
+      function showVerifyForm() {
+        document.getElementById("request-otp-section").style.display = "none";
+        document.getElementById("verify-otp-section").style.display = "block";
+        // Focus on OTP input
+        setTimeout(() => {
+          document.getElementById("otp-input").focus();
+        }, 100);
+      }
+
+      function cancelOTP() {
+        // Send a request to cancel the OTP session
+        fetch("/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: "action=cancel_otp",
+        }).finally(() => {
+          showRequestForm();
+        });
+      }
+
+      // Handle OTP input formatting
+      document.addEventListener("DOMContentLoaded", function () {
+        const otpInput = document.getElementById("otp-input");
+        if (otpInput) {
+          otpInput.addEventListener("input", function (e) {
+            // Only allow numbers
+            e.target.value = e.target.value.replace(/[^0-9]/g, "");
+
+            // Auto-submit when 6 digits are entered
+            if (e.target.value.length === 6) {
+              setTimeout(() => {
+                document.getElementById("verify-otp-form").submit();
+              }, 100);
+            }
+          });
+        }
+
+        // Handle request OTP form submission
+        const requestForm = document.getElementById("request-otp-form");
+        if (requestForm) {
+          requestForm.addEventListener("submit", function (e) {
+            const btn = document.getElementById("request-otp-btn");
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split"></i> Sending...';
+          });
+        }
+      });
+
+      // Prevent back button from showing cached page
+      window.addEventListener("pageshow", function (event) {
+        if (event.persisted) {
+          window.location.reload();
+        }
+      });
+
+      // Security: Disable right-click and common shortcuts
+      document.addEventListener("contextmenu", function (e) {
+        e.preventDefault();
+      });
+
+      document.addEventListener("keydown", function (e) {
+        // Disable F12, Ctrl+Shift+I, Ctrl+U
+        if (
+          e.key === "F12" ||
+          (e.ctrlKey && e.shiftKey && e.key === "I") ||
+          (e.ctrlKey && e.key === "u")
+        ) {
+          e.preventDefault();
+        }
+      });
+    </script>
   </body>
 </html>

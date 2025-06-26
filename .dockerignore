@@ -27,6 +27,8 @@ instance/
 Thumbs.db
 
 # Tilt i Docker fajlovi koje ne želiš da se keširaju
+Tiltfile
+docker-compose.dev.yml
 *.zip
 *.tar
 *.tar.gz
