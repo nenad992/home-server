@@ -15,12 +15,36 @@
     <style>
       body {
         font-family: "Segoe UI", Arial, sans-serif;
-        background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+        background: linear-gradient(135deg, #23243a 0%, #2e8b57 100%);
+        color: #f4f4f4;
+        min-height: 100vh;
+        margin: 0;
         display: flex;
-        height: 100vh;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
-        margin: 0;
+      }
+      .navbar {
+        background: rgba(41, 49, 70, 0.98);
+        box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+        border-bottom: 1px solid #2e8b57;
+        width: 100vw;
+        position: fixed;
+        top: 0;
+        left: 0;
+        z-index: 10;
+      }
+      .navbar-brand {
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        color: #fff !important;
+      }
+      .login-container {
+        width: 100vw;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
       .login-box {
         background: rgba(255, 255, 255, 0.95);
@@ -30,6 +54,7 @@
         width: 100%;
         max-width: 400px;
         animation: fadeInUp 0.7s cubic-bezier(0.39, 0.575, 0.565, 1) both;
+        margin-top: 80px;
       }
       @keyframes fadeInUp {
         0% {
@@ -90,36 +115,43 @@
     </style>
   </head>
   <body>
-    <div class="login-box">
-      <div class="login-icon">
-        <i class="bi bi-shield-lock-fill"></i>
+    <nav class="navbar navbar-expand-lg navbar-dark px-3 sticky-top">
+      <a class="navbar-brand fw-bold" href="/dashboard"
+        ><i class="bi bi-hdd-network icon"></i>Home Server</a
+      >
+    </nav>
+    <div class="login-container">
+      <div class="login-box">
+        <div class="login-icon">
+          <i class="bi bi-shield-lock-fill"></i>
+        </div>
+        <h2 class="text-center mb-3">Login</h2>
+        {% if error %}
+        <div class="error">{{ error }}</div>
+        {% endif %}
+        <form method="POST">
+          <div class="mb-3">
+            <input
+              type="text"
+              name="username"
+              class="form-control"
+              placeholder="Username"
+              required
+              autofocus
+            />
+          </div>
+          <div class="mb-3">
+            <input
+              type="password"
+              name="password"
+              class="form-control"
+              placeholder="Password"
+              required
+            />
+          </div>
+          <button type="submit" class="btn btn-success w-100">Login</button>
+        </form>
       </div>
-      <h2 class="text-center mb-3">Login</h2>
-      {% if error %}
-      <div class="error">{{ error }}</div>
-      {% endif %}
-      <form method="POST">
-        <div class="mb-3">
-          <input
-            type="text"
-            name="username"
-            class="form-control"
-            placeholder="Username"
-            required
-            autofocus
-          />
-        </div>
-        <div class="mb-3">
-          <input
-            type="password"
-            name="password"
-            class="form-control"
-            placeholder="Password"
-            required
-          />
-        </div>
-        <button type="submit" class="btn btn-success w-100">Login</button>
-      </form>
     </div>
   </body>
 </html>
