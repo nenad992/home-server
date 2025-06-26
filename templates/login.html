@@ -1,47 +1,125 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <title>Login</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f3f3f3;
-      display: flex;
-      height: 100vh;
-      align-items: center;
-      justify-content: center;
-    }
-    .login-box {
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      width: 100%;
-      max-width: 400px;
-    }
-    .error {
-      color: red;
-      margin-bottom: 10px;
-      text-align: center;
-    }
-  </style>
-</head>
-<body>
-  <div class="login-box">
-    <h2 class="text-center mb-4">🔐 Login</h2>
-    {% if error %}<div class="error">{{ error }}</div>{% endif %}
-    <form method="POST">
-      <div class="mb-3">
-        <input type="text" name="username" class="form-control" placeholder="Username" required>
+  <head>
+    <title>Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+      body {
+        font-family: "Segoe UI", Arial, sans-serif;
+        background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+        display: flex;
+        height: 100vh;
+        align-items: center;
+        justify-content: center;
+        margin: 0;
+      }
+      .login-box {
+        background: rgba(255, 255, 255, 0.95);
+        padding: 36px 32px 32px 32px;
+        border-radius: 18px;
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+        width: 100%;
+        max-width: 400px;
+        animation: fadeInUp 0.7s cubic-bezier(0.39, 0.575, 0.565, 1) both;
+      }
+      @keyframes fadeInUp {
+        0% {
+          opacity: 0;
+          transform: translateY(40px);
+        }
+        100% {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .login-icon {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 2.8rem;
+        color: #2e8b57;
+        margin-bottom: 10px;
+      }
+      .error {
+        color: #d9534f;
+        margin-bottom: 12px;
+        text-align: center;
+        font-weight: 500;
+      }
+      .form-control {
+        border-radius: 8px;
+        font-size: 1.1rem;
+        padding: 12px 14px;
+        box-shadow: none;
+        border: 1px solid #e0e0e0;
+        transition: border-color 0.2s;
+      }
+      .form-control:focus {
+        border-color: #2e8b57;
+        box-shadow: 0 0 0 2px #2e8b5733;
+      }
+      .btn-success {
+        border-radius: 8px;
+        font-size: 1.1rem;
+        padding: 12px 0;
+        background: linear-gradient(90deg, #2e8b57 60%, #4fd1c5 100%);
+        border: none;
+        transition: background 0.2s, box-shadow 0.2s;
+        box-shadow: 0 2px 8px 0 rgba(46, 139, 87, 0.08);
+      }
+      .btn-success:hover,
+      .btn-success:focus {
+        background: linear-gradient(90deg, #24914b 60%, #38b2ac 100%);
+        box-shadow: 0 4px 16px 0 rgba(46, 139, 87, 0.13);
+      }
+      h2 {
+        font-weight: 700;
+        color: #2e8b57;
+        margin-bottom: 18px;
+        letter-spacing: 1px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-box">
+      <div class="login-icon">
+        <i class="bi bi-shield-lock-fill"></i>
       </div>
-      <div class="mb-3">
-        <input type="password" name="password" class="form-control" placeholder="Password" required>
-      </div>
-      <button type="submit" class="btn btn-success w-100">Login</button>
-    </form>
-  </div>
-</body>
+      <h2 class="text-center mb-3">Login</h2>
+      {% if error %}
+      <div class="error">{{ error }}</div>
+      {% endif %}
+      <form method="POST">
+        <div class="mb-3">
+          <input
+            type="text"
+            name="username"
+            class="form-control"
+            placeholder="Username"
+            required
+            autofocus
+          />
+        </div>
+        <div class="mb-3">
+          <input
+            type="password"
+            name="password"
+            class="form-control"
+            placeholder="Password"
+            required
+          />
+        </div>
+        <button type="submit" class="btn btn-success w-100">Login</button>
+      </form>
+    </div>
+  </body>
 </html>
