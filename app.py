@@ -41,6 +41,91 @@ MAX_LOGIN_ATTEMPTS = 3  # Maximum failed login attempts before temporary ban
 SERVER_IP = "192.168.0.50"
 SERVER_MAC = "04:d4:c4:f2:a0:15"
 
+# Dashboard caching system
+dashboard_cache = {
+    'data': {},
+    'last_update': 0,
+    'cache_duration': 60,  # Cache for 60 seconds
+    'background_update_interval': 30,  # Update every 30 seconds in background
+    'lock': threading.Lock()
+}
+
+# Cache keys for different update intervals
+CACHE_KEYS = {
+    'fast': ['services', 'usage', 'docker_stats'],  # Update every 30s
+    'medium': ['traffic', 'system_info', 'alerts'],  # Update every 60s
+    'slow': ['network', 'bandwidth', 'security', 'logins']  # Update every 120s
+}
+
+def get_cached_data(key, fetch_func, max_age=60):
+    """Get data from cache or fetch if expired"""
+    current_time = time.time()
+    
+    with dashboard_cache['lock']:
+        if (key in dashboard_cache['data'] and 
+            current_time - dashboard_cache['data'][key].get('timestamp', 0) < max_age):
+            return dashboard_cache['data'][key]['data']
+    
+    # Fetch new data
+    try:
+        new_data = fetch_func()
+        with dashboard_cache['lock']:
+            dashboard_cache['data'][key] = {
+                'data': new_data,
+                'timestamp': current_time
+            }
+        return new_data
+    except Exception as e:
+        print(f"Error fetching {key}: {e}")
+        # Return cached data if available, even if expired
+        if key in dashboard_cache['data']:
+            return dashboard_cache['data'][key]['data']
+        return None
+
+def background_data_updater():
+    """Background thread to update dashboard data"""
+    while True:
+        try:
+            if check_server_online():
+                current_time = time.time()
+                
+                # Update fast data every 30s
+                if current_time % 30 < 1:
+                    for key in CACHE_KEYS['fast']:
+                        if key == 'services':
+                            get_cached_data('services', get_service_statuses, 30)
+                        elif key == 'usage':
+                            get_cached_data('usage', get_usage_data, 30)
+                        elif key == 'docker_stats':
+                            get_cached_data('docker_stats', get_detailed_docker_stats, 30)
+                
+                # Update medium data every 60s
+                if current_time % 60 < 1:
+                    for key in CACHE_KEYS['medium']:
+                        if key == 'traffic':
+                            get_cached_data('traffic', get_traffic_data, 60)
+                        elif key == 'system_info':
+                            get_cached_data('system_info', get_system_info, 60)
+                        elif key == 'alerts':
+                            get_cached_data('alerts', get_system_alerts, 60)
+                
+                # Update slow data every 120s
+                if current_time % 120 < 1:
+                    for key in CACHE_KEYS['slow']:
+                        if key == 'network':
+                            get_cached_data('network', get_network_interfaces, 120)
+                        elif key == 'bandwidth':
+                            get_cached_data('bandwidth', get_network_bandwidth, 120)
+                        elif key == 'security':
+                            get_cached_data('security', get_security_info, 120)
+                        elif key == 'logins':
+                            get_cached_data('logins', get_login_stats, 120)
+            
+        except Exception as e:
+            print(f"Background updater error: {e}")
+        
+        time.sleep(5)  # Check every 5 seconds
+
 def generate_otp():
     """Generate a secure random OTP"""
     return ''.join([str(secrets.randbelow(10)) for _ in range(OTP_LENGTH)])
@@ -668,20 +753,31 @@ def dashboard():
 
     online = check_server_online()
     
-    # Only fetch data if server is online
-    services = get_service_statuses() if online else {}
-    usage = get_usage_data() if online else {}
-    traffic = get_traffic_data() if online else {}
-    docker_stats = get_detailed_docker_stats() if online else {'containers': [], 'stats': {}, 'total': 0, 'running': 0, 'stopped': 0, 'avg_cpu': 0, 'last_updated': 'N/A'}
-    storage = get_storage_data() if online else {'filesystems': [], 'zpools': [], 'total_used': 0, 'total_available': 0, 'total_size': 0}
-    network = get_network_interfaces() if online else {'interfaces': [], 'default_gateway': 'N/A', 'last_updated': 'N/A'}
-    system_info = get_system_info() if online else {'uptime': 'N/A', 'memory': {}, 'cpu': {}, 'system': 'N/A', 'last_updated': 'N/A'}
-    logins = get_login_stats()
-
-    # Get additional data for enhanced dashboard
-    alerts = get_system_alerts() if online else {'alerts': [], 'count': 0, 'last_updated': 'N/A'}
-    bandwidth = get_network_bandwidth() if online else {'interfaces': {}, 'total_rx': 0, 'total_tx': 0, 'last_updated': 'N/A'}
-    security = get_security_info() if online else {'failed_logins': 0, 'active_connections': 0, 'firewall_status': 'N/A', 'last_login': 'N/A', 'ssh_attempts': [], 'last_updated': 'N/A'}
+    # Use cached data for better performance
+    if online:
+        services = get_cached_data('services', get_service_statuses, 30) or {}
+        usage = get_cached_data('usage', get_usage_data, 30) or {}
+        traffic = get_cached_data('traffic', get_traffic_data, 60) or {}
+        docker_stats = get_cached_data('docker_stats', get_detailed_docker_stats, 30) or {'containers': [], 'stats': {}, 'total': 0, 'running': 0, 'stopped': 0, 'avg_cpu': 0, 'last_updated': 'N/A'}
+        # Remove storage data to improve performance - filesystems section removed
+        network = get_cached_data('network', get_network_interfaces, 120) or {'interfaces': [], 'default_gateway': 'N/A', 'last_updated': 'N/A'}
+        system_info = get_cached_data('system_info', get_system_info, 60) or {'uptime': 'N/A', 'memory': {}, 'cpu': {}, 'system': 'N/A', 'last_updated': 'N/A'}
+        logins = get_cached_data('logins', get_login_stats, 120) or {}
+        alerts = get_cached_data('alerts', get_system_alerts, 60) or {'alerts': [], 'count': 0, 'last_updated': 'N/A'}
+        bandwidth = get_cached_data('bandwidth', get_network_bandwidth, 120) or {'interfaces': {}, 'total_rx': 0, 'total_tx': 0, 'last_updated': 'N/A'}
+        security = get_cached_data('security', get_security_info, 120) or {'failed_logins': 0, 'active_connections': 0, 'firewall_status': 'N/A', 'last_login': 'N/A', 'ssh_attempts': [], 'last_updated': 'N/A'}
+    else:
+        # Offline fallback data
+        services = {}
+        usage = {}
+        traffic = {}
+        docker_stats = {'containers': [], 'stats': {}, 'total': 0, 'running': 0, 'stopped': 0, 'avg_cpu': 0, 'last_updated': 'N/A'}
+        network = {'interfaces': [], 'default_gateway': 'N/A', 'last_updated': 'N/A'}
+        system_info = {'uptime': 'N/A', 'memory': {}, 'cpu': {}, 'system': 'N/A', 'last_updated': 'N/A'}
+        logins = {}
+        alerts = {'alerts': [], 'count': 0, 'last_updated': 'N/A'}
+        bandwidth = {'interfaces': {}, 'total_rx': 0, 'total_tx': 0, 'last_updated': 'N/A'}
+        security = {'failed_logins': 0, 'active_connections': 0, 'firewall_status': 'N/A', 'last_login': 'N/A', 'ssh_attempts': [], 'last_updated': 'N/A'}
 
     return render_template(
         "dashboard.html",
@@ -690,7 +786,6 @@ def dashboard():
         usage=usage,
         traffic=traffic,
         docker_stats=docker_stats,
-        storage=storage,
         network=network,
         system_info=system_info,
         logins=logins,
@@ -715,21 +810,20 @@ def api_dashboard_data():
         })
     
     try:
-        # Fetch all data in parallel for better performance
+        # Use cached data for better performance
         data = {
             'online': True,
             'timestamp': datetime.now().strftime('%H:%M:%S'),
-            'services': get_service_statuses(),
-            'usage': get_usage_data(),
-            'traffic': get_traffic_data(),
-            'docker_stats': get_detailed_docker_stats(),
-            'storage': get_storage_data(),
-            'network': get_network_interfaces(),
-            'system_info': get_system_info(),
-            'logins': get_login_stats(),
-            'alerts': get_system_alerts(),
-            'bandwidth': get_network_bandwidth(),
-            'security': get_security_info()
+            'services': get_cached_data('services', get_service_statuses, 30) or {},
+            'usage': get_cached_data('usage', get_usage_data, 30) or {},
+            'traffic': get_cached_data('traffic', get_traffic_data, 60) or {},
+            'docker_stats': get_cached_data('docker_stats', get_detailed_docker_stats, 30) or {'containers': [], 'stats': {}, 'total': 0, 'running': 0, 'stopped': 0, 'avg_cpu': 0, 'last_updated': 'N/A'},
+            'network': get_cached_data('network', get_network_interfaces, 120) or {'interfaces': [], 'default_gateway': 'N/A', 'last_updated': 'N/A'},
+            'system_info': get_cached_data('system_info', get_system_info, 60) or {'uptime': 'N/A', 'memory': {}, 'cpu': {}, 'system': 'N/A', 'last_updated': 'N/A'},
+            'logins': get_cached_data('logins', get_login_stats, 120) or {},
+            'alerts': get_cached_data('alerts', get_system_alerts, 60) or {'alerts': [], 'count': 0, 'last_updated': 'N/A'},
+            'bandwidth': get_cached_data('bandwidth', get_network_bandwidth, 120) or {'interfaces': {}, 'total_rx': 0, 'total_tx': 0, 'last_updated': 'N/A'},
+            'security': get_cached_data('security', get_security_info, 120) or {'failed_logins': 0, 'active_connections': 0, 'firewall_status': 'N/A', 'last_login': 'N/A', 'ssh_attempts': [], 'last_updated': 'N/A'}
         }
         return jsonify(data)
     except Exception as e:
@@ -1129,6 +1223,10 @@ def execute_quick_action(action):
             'error': str(e),
             'timestamp': datetime.now().strftime('%H:%M:%S')
         }
+
+# Start background updater thread after all functions are defined
+background_thread = threading.Thread(target=background_data_updater, daemon=True)
+background_thread.start()
 
 if __name__ == "__main__":
     print("🔗 Pristupi aplikaciji na:", os.getenv("LOCAL_URL", "http://localhost:8888"))
