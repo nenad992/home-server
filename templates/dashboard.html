@@ -525,42 +525,6 @@
           {% endif %}
         </div>
 
-        <!-- Network / Traffic -->
-        <div class="card p-3">
-          <h5 class="card-title">
-            <i class="bi bi-diagram-3 icon"></i>Network & Traffic
-            <button
-              class="btn btn-outline-primary btn-sm ms-auto"
-              onclick="refreshTraffic()"
-              title="Refresh Traffic"
-            >
-              <i class="bi bi-arrow-clockwise"></i>
-            </button>
-          </h5>
-          {% if traffic and online %} {% set op_tx = traffic.orange.tx or 0 %}
-          {% set op_rx = traffic.orange.rx or 0 %} {% set main_tx =
-          traffic.main.tx or 0 %} {% set main_rx = traffic.main.rx or 0 %}
-
-          <p>
-            <strong>Orange Pi:</strong> ↑ {{ (op_tx / 1048576) | round(2) }} MB
-            ↓ {{ (op_rx / 1048576) | round(2) }} MB
-          </p>
-          <p>
-            <strong>TrueNAS:</strong> ↑ {{ (main_tx / 1048576) | round(2) }} MB
-            ↓ {{ (main_rx / 1048576) | round(2) }} MB
-          </p>
-          <p>
-            <strong>Total:</strong> ↑ {{ ((op_tx + main_tx) / 1048576) |
-            round(2) }} MB ↓ {{ ((op_rx + main_rx) / 1048576) | round(2) }} MB
-          </p>
-          {% else %}
-          <p>
-            {% if not online %}Server offline - no traffic data available{% else
-            %}No traffic data available{% endif %}
-          </p>
-          {% endif %}
-        </div>
-
         <!-- Login Activity -->
         <div class="card p-3">
           <h5 class="card-title">
@@ -937,14 +901,6 @@
           </h5>
           {% if online %}
           <div class="row g-2">
-            <div class="col-6">
-              <button
-                class="btn btn-outline-info btn-sm w-100"
-                onclick="executeQuickAction('container-health')"
-              >
-                <i class="bi bi-heart-pulse"></i> Health Check
-              </button>
-            </div>
             <div class="col-6">
               <button
                 class="btn btn-outline-warning btn-sm w-100"
@@ -1908,28 +1864,6 @@
           })
           .catch((error) => {
             console.error("Error refreshing usage:", error);
-          })
-          .finally(() => {
-            btn.innerHTML = originalHtml;
-            btn.disabled = false;
-          });
-      }
-
-      function refreshTraffic() {
-        const btn = event.target.closest("button");
-        const originalHtml = btn.innerHTML;
-        btn.innerHTML = '<i class="bi bi-arrow-clockwise spin"></i>';
-        btn.disabled = true;
-
-        fetch("/api/dashboard-data")
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.traffic) {
-              location.reload();
-            }
-          })
-          .catch((error) => {
-            console.error("Error refreshing traffic:", error);
           })
           .finally(() => {
             btn.innerHTML = originalHtml;
