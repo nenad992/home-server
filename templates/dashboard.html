@@ -939,14 +939,6 @@
           <div class="row g-2">
             <div class="col-6">
               <button
-                class="btn btn-outline-primary btn-sm w-100"
-                onclick="executeQuickAction('docker-prune')"
-              >
-                <i class="bi bi-trash3"></i> Clean Docker
-              </button>
-            </div>
-            <div class="col-6">
-              <button
                 class="btn btn-outline-info btn-sm w-100"
                 onclick="executeQuickAction('container-health')"
               >
@@ -956,17 +948,113 @@
             <div class="col-6">
               <button
                 class="btn btn-outline-warning btn-sm w-100"
-                onclick="executeQuickAction('check-disk')"
+                onclick="executeQuickAction('disk_usage_orange')"
               >
-                <i class="bi bi-hdd"></i> Check Disk
+                <i class="bi bi-hdd"></i> Disk Usage (Orange Pi)
+              </button>
+            </div>
+            <div class="col-6">
+              <button
+                class="btn btn-outline-warning btn-sm w-100"
+                onclick="executeQuickAction('disk_usage_truenas')"
+              >
+                <i class="bi bi-hdd"></i> Disk Usage (TrueNAS)
               </button>
             </div>
             <div class="col-6">
               <button
                 class="btn btn-outline-secondary btn-sm w-100"
-                onclick="executeQuickAction('update-packages')"
+                onclick="executeQuickAction('update_packages_orange')"
               >
-                <i class="bi bi-arrow-repeat"></i> Check Updates
+                <i class="bi bi-arrow-repeat"></i> Check Updates (Orange Pi)
+              </button>
+            </div>
+            <div class="col-6">
+              <button
+                class="btn btn-outline-secondary btn-sm w-100"
+                onclick="executeQuickAction('update_packages_truenas')"
+              >
+                <i class="bi bi-arrow-repeat"></i> Check Updates (TrueNAS)
+              </button>
+            </div>
+            <div class="col-6">
+              <button
+                class="btn btn-outline-primary btn-sm w-100"
+                onclick="executeQuickAction('uptime_orange')"
+              >
+                <i class="bi bi-clock-history"></i> Uptime (Orange Pi)
+              </button>
+            </div>
+            <div class="col-6">
+              <button
+                class="btn btn-outline-primary btn-sm w-100"
+                onclick="executeQuickAction('uptime_truenas')"
+              >
+                <i class="bi bi-clock-history"></i> Uptime (TrueNAS)
+              </button>
+            </div>
+            <div class="col-6">
+              <button
+                class="btn btn-outline-dark btn-sm w-100"
+                onclick="executeQuickAction('syslog_orange')"
+              >
+                <i class="bi bi-file-earmark-text"></i> Syslog (Orange Pi)
+              </button>
+            </div>
+            <div class="col-6">
+              <button
+                class="btn btn-outline-dark btn-sm w-100"
+                onclick="executeQuickAction('syslog_truenas')"
+              >
+                <i class="bi bi-file-earmark-text"></i> Syslog (TrueNAS)
+              </button>
+            </div>
+            <div class="col-6">
+              <button
+                class="btn btn-outline-info btn-sm w-100"
+                onclick="executeQuickAction('processes_orange')"
+              >
+                <i class="bi bi-list"></i> Processes (Orange Pi)
+              </button>
+            </div>
+            <div class="col-6">
+              <button
+                class="btn btn-outline-info btn-sm w-100"
+                onclick="executeQuickAction('processes_truenas')"
+              >
+                <i class="bi bi-list"></i> Processes (TrueNAS)
+              </button>
+            </div>
+            <div class="col-6">
+              <button
+                class="btn btn-outline-success btn-sm w-100"
+                onclick="executeQuickAction('zfs_status')"
+              >
+                <i class="bi bi-database"></i> ZFS Status
+              </button>
+            </div>
+            <div class="col-6">
+              <button
+                class="btn btn-outline-success btn-sm w-100"
+                onclick="executeQuickAction('smart_status')"
+              >
+                <i class="bi bi-activity"></i> SMART Status
+              </button>
+            </div>
+            <div class="col-6">
+              <button
+                class="btn btn-outline-secondary btn-sm w-100"
+                onclick="promptPing()"
+              >
+                <i class="bi bi-wifi"></i> Ping Host
+              </button>
+            </div>
+            <div class="col-6">
+              <button
+                class="btn btn-outline-warning btn-sm w-100"
+                onclick="promptRestartService()"
+              >
+                <i class="bi bi-arrow-repeat"></i> Restart Service
               </button>
             </div>
           </div>
@@ -1706,18 +1794,17 @@
       });
 
       // Quick Actions functionality
-      function executeQuickAction(action) {
-        const button = event.target;
-        const originalText = button.innerHTML;
-        button.innerHTML = '<i class="bi bi-hourglass-split"></i> Working...';
-        button.disabled = true;
-
+      function executeQuickAction(action, arg) {
+        const button = event.target.closest("button");
+        const originalText = button ? button.innerHTML : "";
+        if (button) {
+          button.innerHTML = '<i class="bi bi-hourglass-split"></i> Working...';
+          button.disabled = true;
+        }
         fetch("/api/quick-action", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ action: action }),
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(arg ? { action, arg } : { action }),
         })
           .then((response) => response.json())
           .then((data) => {
@@ -1731,13 +1818,17 @@
             } else {
               Swal.fire("Error", data.error || "Action failed", "error");
             }
-            button.innerHTML = originalText;
-            button.disabled = false;
+            if (button) {
+              button.innerHTML = originalText;
+              button.disabled = false;
+            }
           })
           .catch((error) => {
             Swal.fire("Error", "Failed to execute action", "error");
-            button.innerHTML = originalText;
-            button.disabled = false;
+            if (button) {
+              button.innerHTML = originalText;
+              button.disabled = false;
+            }
           });
       }
 
@@ -1910,6 +2001,35 @@
             btn.innerHTML = originalHtml;
             btn.disabled = false;
           });
+      }
+
+      function promptPing() {
+        Swal.fire({
+          title: "Ping Host",
+          input: "text",
+          inputLabel: "Enter hostname or IP",
+          showCancelButton: true,
+          confirmButtonText: "Ping",
+          preConfirm: (host) => {
+            if (!host) return Swal.showValidationMessage("Host is required");
+            executeQuickAction("ping", host);
+          },
+        });
+      }
+
+      function promptRestartService() {
+        Swal.fire({
+          title: "Restart Service",
+          input: "text",
+          inputLabel: "Enter service/container name",
+          showCancelButton: true,
+          confirmButtonText: "Restart",
+          preConfirm: (service) => {
+            if (!service)
+              return Swal.showValidationMessage("Service name is required");
+            executeQuickAction("restart_service", service);
+          },
+        });
       }
     </script>
 

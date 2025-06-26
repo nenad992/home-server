@@ -907,12 +907,14 @@ def api_quick_action():
     """API endpoint for quick actions"""
     if not session.get('logged_in'):
         return jsonify({'error': 'Unauthorized'}), 401
-    
-    action = request.json.get('action') if request.is_json else request.form.get('action')
+
+    data = request.get_json(force=True)
+    action = data.get('action')
+    arg = data.get('arg')
     if not action:
         return jsonify({'error': 'Action required'}), 400
-    
-    result = execute_quick_action(action)
+
+    result = execute_quick_action(action, arg)
     return jsonify(result)
 
 @app.route('/api/alerts')
@@ -926,12 +928,16 @@ def api_alerts():
 
 @app.route('/logout')
 def logout():
+    print('Logout called')  # Debug log
+    session['logged_in'] = False
     session.clear()  # Clear all session data
     response = redirect(url_for('login'))
     # Add headers to prevent caching and ensure proper logout
     response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
     response.headers['Pragma'] = 'no-cache'
     response.headers['Expires'] = '0'
+    # Expire the session cookie immediately
+    response.set_cookie('session', '', expires=0)
     return response
 
 @app.route('/favicon.ico')
@@ -1258,36 +1264,73 @@ def get_security_info():
         return {'failed_logins': 0, 'active_connections': 0, 'firewall_status': 'Error', 
                 'last_login': 'Error', 'ssh_attempts': [], 'last_updated': 'Error'}
 
-def execute_quick_action(action):
+def execute_quick_action(action, arg=None):
     """Execute quick maintenance actions"""
     try:
-        actions = {
-            'docker-prune': 'docker system prune -f',
-            'update-packages': 'apt update && apt list --upgradable',
-            'restart-networking': 'systemctl restart networking',
-            'check-disk': 'df -h && du -sh /var/log/*',
-            'container-health': 'docker ps --format "table {{.Names}}\t{{.Status}}\t{{.RunningFor}}"'
-        }
-        
-        if action not in actions:
-            return {'success': False, 'error': 'Unknown action'}
-        
-        cmd = f'ssh -o ConnectTimeout=10 root@{SERVER_IP} "{actions[action]}"'
-        output = subprocess.check_output(cmd, shell=True, timeout=30).decode().strip()
-        
-        return {
-            'success': True,
-            'action': action,
-            'output': output,
-            'timestamp': datetime.now().strftime('%H:%M:%S')
-        }
+        # Determine where to run the command
+        # Orange Pi = local, TrueNAS = via SSH
+        def run_orangepi(cmd):
+            return subprocess.check_output(cmd, shell=True, timeout=30).decode().strip()
+        def run_truenas(cmd):
+            ssh_cmd = f'ssh -o ConnectTimeout=10 root@{SERVER_IP} "{cmd}"'
+            return subprocess.check_output(ssh_cmd, shell=True, timeout=30).decode().strip()
+
+        # Action map
+        if action == 'restart_service':
+            if not arg:
+                return {'success': False, 'error': 'Service name required'}
+            # Use manage_service.sh for Docker containers on TrueNAS
+            cmd = f'/mnt/Main_data/scripts/server_web_fallback/commands/manage_service.sh "{arg}" restart'
+            output = run_orangepi(cmd)
+            return {'success': True, 'output': output}
+        elif action == 'zfs_status':
+            output = run_truenas('zpool status')
+            return {'success': True, 'output': output}
+        elif action == 'smart_status':
+            output = run_truenas('smartctl --scan | awk \'{print $1}\' | xargs -n1 smartctl -a')
+            return {'success': True, 'output': output}
+        elif action == 'uptime_orange':
+            output = run_orangepi('uptime')
+            return {'success': True, 'output': output}
+        elif action == 'uptime_truenas':
+            output = run_truenas('uptime')
+            return {'success': True, 'output': output}
+        elif action == 'syslog_orange':
+            output = run_orangepi('tail -n 50 /var/log/syslog || tail -n 50 /var/log/messages')
+            return {'success': True, 'output': output}
+        elif action == 'syslog_truenas':
+            output = run_truenas('tail -n 50 /var/log/messages')
+            return {'success': True, 'output': output}
+        elif action == 'ping':
+            if not arg:
+                return {'success': False, 'error': 'Host required'}
+            output = run_orangepi(f'ping -c 4 {arg}')
+            return {'success': True, 'output': output}
+        elif action == 'disk_usage_orange':
+            output = run_orangepi('df -h')
+            return {'success': True, 'output': output}
+        elif action == 'disk_usage_truenas':
+            output = run_truenas('df -h')
+            return {'success': True, 'output': output}
+        elif action == 'processes_orange':
+            output = run_orangepi('ps aux | head -20')
+            return {'success': True, 'output': output}
+        elif action == 'processes_truenas':
+            output = run_truenas('ps aux | head -20')
+            return {'success': True, 'output': output}
+        elif action == 'update_packages_orange':
+            output = run_orangepi('apt update && apt list --upgradable')
+            return {'success': True, 'output': output}
+        elif action == 'update_packages_truenas':
+            # TrueNAS Scale: midclt call update.check_available
+            output = run_truenas('midclt call update.check_available')
+            return {'success': True, 'output': output}
+        else:
+            return {'success': False, 'error': 'Unknown or unsupported action'}
+    except subprocess.CalledProcessError as e:
+        return {'success': False, 'error': f'Command failed: {e}\nOutput: {e.output.decode() if e.output else ""}'}
     except Exception as e:
-        return {
-            'success': False,
-            'action': action,
-            'error': str(e),
-            'timestamp': datetime.now().strftime('%H:%M:%S')
-        }
+        return {'success': False, 'error': str(e)}
 
 # Start background updater thread after all functions are defined
 background_thread = threading.Thread(target=background_data_updater, daemon=True)
